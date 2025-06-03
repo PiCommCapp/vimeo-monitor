@@ -1,0 +1,7 @@
+{{ "[" }}Desktop Entry{{ "]" }}
+Type=Application
+Name=Vimeo Stream Monitor
+Comment=Launch Vimeo Stream Monitor at startup
+Exec=/bin/bash -c 'source {{ home_dir }}/code/.venv/bin/activate && exec python3 {{ home_dir }}/code/streamreturn.py'
+Terminal=false
+Hidden=false

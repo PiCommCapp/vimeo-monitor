@@ -3,7 +3,7 @@
 """Package entry point."""
 
 
-from vimeo_monitor.cli import main
+from vimeo_monitor.monitor import main
 
 
 if __name__ == '__main__':  # pragma: no cover

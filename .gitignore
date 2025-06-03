@@ -143,3 +143,11 @@ media/
 # optimization-journey/
 # memory-bank/
 # custom_modes
+
+*.log
+*.logs
+*.log.*
+*.log.*.*
+*.log.*.*.*
+*.log.*.*.*.*
+*.log.*.*.*.*.*

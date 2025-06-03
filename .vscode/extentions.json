@@ -18,6 +18,7 @@
     "gruntfuggly.todo-tree",
     "esbenp.prettier-vscode",
     "mutantdino.resourcemonitor",
+    "gruntfuggly.todo-tree",
 
     // Git
     "github.vscode-github-actions",
