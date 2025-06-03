@@ -15,6 +15,12 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+dependencies = [
+    "pycodar>=0.1.7",
+    "pyvimeo>=1.1.2",
+    "requests>=2.31.0",
+    "python-dotenv>=1.0.0",
+]
 
 [project.urls]
 homepage = "https://pypi.org/project/vimeo-monitor"
@@ -91,6 +97,7 @@ ignore = [
 [tool.pytest.ini_options]
 filterwarnings = [
     "ignore::DeprecationWarning",
+    "ignore::SyntaxWarning:nodejs_wheel.*",
 ]
 testpaths = ["tests"]
 

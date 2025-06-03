@@ -151,3 +151,22 @@ media/
 *.log.*.*.*
 *.log.*.*.*.*
 *.log.*.*.*.*.*
+
+# IDE and editor files
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp

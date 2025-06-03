@@ -43,13 +43,6 @@ CHECK_INTERVAL=30  # in seconds
 HOLDING_IMAGE_PATH=/home/pi/kiosk/holding.jpg
 API_FAIL_IMAGE_PATH=/home/pi/kiosk/failure.jpg
 
-# API failure handling configuration
-API_FAILURE_THRESHOLD=3  # Number of consecutive failures before entering failure mode
-API_STABILITY_THRESHOLD=5  # Number of consecutive successes before exiting failure mode
-API_MIN_RETRY_INTERVAL=10  # Minimum retry interval in seconds
-API_MAX_RETRY_INTERVAL=300  # Maximum retry interval in seconds
-API_ENABLE_BACKOFF=true  # Enable exponential backoff for retry intervals
-
 DISPLAY_NETWORK_STATUS=true  # Toggleable on-screen overlay
 ```
 
@@ -90,32 +83,11 @@ WantedBy=graphical.target
 
 - **Player Stalls**: Watchdog checks for stale or non-responsive player and restarts playback
 - **API Failures**:
-  - Tracks consecutive failures using configurable threshold
-  - Implements exponential backoff for reconnection attempts
-  - Displays dedicated `API_FAIL_IMAGE_PATH` when in failure mode
-  - Provides detailed error logging with specific exception handling
-  - Requires a configurable number of consecutive successful responses before exiting failure mode
-  - Returns to normal flow once API stabilizes
+  - Counts rapid success/fail switches and locks into failover mode
+  - Displays `API_FAIL_IMAGE_PATH` holding image
+  - Continues polling API in the background
+  - Returns to normal flow once API stabilises
 - **Network Drop**: Network status displayed (if enabled), retry attempts continue in background
-
-## API Failure State Machine
-
-The application implements a three-state machine for handling different operational conditions:
-
-```bash
-                    Error Count ≥ Threshold
-                    ┌────────────────────┐
-                    │                    │
-                    ▼                    │
-┌──────────┐     ┌───────────┐     ┌────────────┐
-│  Stream  │────▶│ No Stream │────▶│ API Failure │
-│   Mode   │◀────│    Mode   │◀────│    Mode     │
-└──────────┘     └───────────┘     └────────────┘
-                    ▲                    │
-                    │                    │
-                    └────────────────────┘
-                    Success Count ≥ Threshold
-```
 
 ## Future Enhancements
 
@@ -123,10 +95,7 @@ The application implements a three-state machine for handling different operatio
 - [ ] Remote Config Sync: Optionally pull `.env` from secure central server
 - [ ] GUI Settings Panel (via Tk or PyQT)
 - [ ] HDMI CEC integration for screen control
-- [ ] Prometheus Metrics: HTTP `/metrics` endpoint for monitoring system health
-- [ ] Dynamic status display on failure image
-- [ ] Error type-specific recovery strategies
-- [ ] Admin notifications for critical errors
+- [ ] Prometheus Metrics: HTTP endpoint for monitoring and alerting
 
 ## Update Procedure
 
@@ -144,4 +113,4 @@ sudo reboot
 
 ## Licence
 
-MIT License
+TBD — proposed MIT or GPLv3
