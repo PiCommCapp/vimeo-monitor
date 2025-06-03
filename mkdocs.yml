@@ -1,0 +1,18 @@
+site_name: vimeo-monitor
+site_description: Vimeo HLS Kiosk
+site_author: Dom Capparelli
+
+repo_url: https://github.com/picommcapp/vimeo-monitor
+edit_uri: https://github.com/picommcapp/vimeo-monitor/edit/main/docs
+
+theme: readthedocs
+
+markdown_extensions:
+  - codehilite
+
+nav:
+  - Home: index.md
+  - About:
+    - Release Notes: about/changelog.md
+    - Contributor Guide: about/contributing.md
+    - License: about/license.md

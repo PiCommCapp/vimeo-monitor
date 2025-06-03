@@ -1,0 +1,26 @@
+{
+  "recommendations": [
+    // Python development
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "batisteo.vscode-django",
+    "anysphere.pyright",
+
+    // Docker
+    "ms-azuretools.vscode-docker",
+
+    // Markdown
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+
+    // Productivity
+    "gruntfuggly.todo-tree",
+    "esbenp.prettier-vscode",
+    "mutantdino.resourcemonitor",
+
+    // Git
+    "github.vscode-github-actions",
+    "eamodio.gitlens"
+  ]
+}
