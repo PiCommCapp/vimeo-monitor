@@ -1,241 +1,557 @@
-# vimeo-monitor
+# Vimeo Stream Monitor
 
-A robust, self-healing video kiosk application for Raspberry Pi that displays Vimeo livestreams with intelligent fallback mechanisms.
+A robust Python application for monitoring Vimeo live streams with automatic failover, health monitoring, network status tracking, and cross-platform system service deployment.
 
-## Overview
+## 🚀 Key Features
 
-`vimeo-monitor` is designed to reliably display Vimeo livestreams on a Raspberry Pi with minimal supervision. It automatically handles API failures, network instability, and playback issues while providing clear visual feedback about the current system state.
+- **🎥 Automated Stream Monitoring**: Continuously monitors Vimeo live stream status with intelligent failover
+- **🌐 Network Health Monitoring**: Real-time network connectivity tracking with fallback strategies
+- **🔐 System Service Installation**: Cross-platform service deployment with security hardening
+- **🖥️ Smart Status Display**: GUI and terminal-based overlays with real-time health indicators
+- **🔄 Auto-Recovery**: Graceful handling of network issues, API failures, and process crashes
+- **📋 Comprehensive Logging**: Automatic log rotation with detailed diagnostics and analysis
+- **🛡️ Production Ready**: Enterprise-grade security, resource limits, and monitoring
+- **🔧 Easy Management**: Complete lifecycle management via simple `make` commands
 
-![State Machine](docs/images/state-machine.png)
+## 🏗️ Architecture
 
-## Features
+The application uses a **modular architecture** with clean separation of concerns:
 
-- **Reliable Livestream Display**: Auto-plays HLS streams from Vimeo with audio
-- **Intelligent Fallbacks**:
-  - Shows a holding image when no stream is available
-  - Displays a dedicated failure image when the API is unstable
-  - Implements exponential backoff for reconnection attempts
-- **Self-Healing**: Automatically recovers from failures without manual intervention
-- **Detailed Diagnostics**: Specific error handling and comprehensive logging
-- **Easy Deployment**: Simple installation and configuration process
-- **Low Maintenance**: Designed for "set and forget" operation
+- **ConfigManager**: Centralized configuration with multi-format support (ENV/YAML/TOML)
+- **HealthMonitor**: API health tracking, failure state management, and network integration
+- **NetworkMonitor**: Multi-protocol connectivity monitoring with adaptive fallback strategies
+- **VimeoAPIClient**: Dedicated API interaction layer with comprehensive error handling
+- **StreamManager**: Process lifecycle and media playbook management
+- **MonitorApp**: Main orchestrator using dependency injection pattern
 
-## Installation
+📖 **[Complete Architecture Documentation](docs/architecture.md)**
+
+## 🌟 Recent Updates
+
+### ✅ **System Service Installation (TASK-010)**
+
+- Cross-platform service installation (Linux systemd, macOS launchd)
+- Enterprise-grade security hardening with dedicated service user
+- One-command setup and deployment (`make setup-service`)
+- Complete lifecycle management and automated uninstall
+
+### ✅ **Network Monitoring & Fallback (TASK-009)**
+
+- Real-time network connectivity monitoring (TCP, HTTP, HTTPS, ICMP)
+- Intelligent fallback strategies with adaptive monitoring intervals
+- Priority-based target selection during network degradation
+- Advanced endpoint fallback with alternative hosts
+
+### ✅ **Enhanced Configuration & Logging**
+
+- Multi-format configuration support (YAML, TOML, ENV)
+- Automatic log rotation with compression and analysis tools
+- Live configuration reload and backup management
+
+## 🛠️ Quick Start
 
 ### Prerequisites
 
-- Raspberry Pi 5 (or 4 with sufficient RAM)
-- Raspberry Pi OS Desktop (with X11)
-- Python 3.9+
-- Network connectivity
+**System Requirements:**
 
-### Basic Installation
+- **Linux**: Ubuntu 16.04+, CentOS 7+, Debian 8+ (with systemd)
+- **macOS**: macOS 10.10+ (with launchd)
+- **Python**: 3.11+
+- **Dependencies**: ffmpeg (for media playback)
 
-1. Clone the repository:
+**For Production (Raspberry Pi):**
 
-   ```bash
-   git clone https://github.com/yourusername/vimeo-monitor.git
-   cd vimeo-monitor
-   ```
+- Raspberry Pi OS Desktop (NOT Lite - requires GUI)
+- X11 desktop environment for video display
+- See [Raspberry Pi Deployment Guide](docs/raspberry-pi-deployment.md)
 
-2. Create a virtual environment and install dependencies:
+### Installation Options
 
-   ```bash
-   make install
-   # or manually:
-   python -m venv .venv
-   source .venv/bin/activate
-   pip install -e .
-   ```
-
-3. Create your configuration:
-
-   ```bash
-   cp .env.sample .env
-   # Edit .env with your Vimeo API credentials and configuration
-   ```
-
-4. Test the application:
-
-   ```bash
-   uv run -m vimeo_monitor.monitor
-   ```
-
-### Production Deployment
-
-For production deployment on a Raspberry Pi, set up the application to run automatically on boot:
-
-1. Copy the systemd service file:
-
-   ```bash
-   sudo cp services/vimeo-monitor.service /etc/systemd/system/
-   ```
-
-2. Edit the service file to match your installation path:
-
-   ```bash
-   sudo nano /etc/systemd/system/vimeo-monitor.service
-   ```
-
-3. Enable and start the service:
-
-   ```bash
-   sudo systemctl enable vimeo-monitor
-   sudo systemctl start vimeo-monitor
-   ```
-
-## Configuration
-
-Create a `.env` file in the project root with the following parameters:
-
-```env
-# Vimeo API credentials
-VIMEO_TOKEN="your_vimeo_token"
-VIMEO_KEY="your_vimeo_key"
-VIMEO_SECRET="your_vimeo_secret"
-VIMEO_STREAM_ID="your_stream_id"
-
-# General settings
-LOG_LEVEL="INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-LOG_FILE=./logs/vimeo_monitor.logs
-CHECK_INTERVAL=30  # Polling interval in seconds
-
-# Image paths
-HOLDING_IMAGE_PATH=/path/to/holding.jpg
-API_FAIL_IMAGE_PATH=/path/to/failure.jpg
-
-# API failure handling
-API_FAILURE_THRESHOLD=3  # Consecutive failures before entering failure mode
-API_STABILITY_THRESHOLD=5  # Consecutive successes before exiting failure mode
-API_MIN_RETRY_INTERVAL=10  # Minimum retry interval in seconds
-API_MAX_RETRY_INTERVAL=300  # Maximum retry interval in seconds
-API_ENABLE_BACKOFF=true  # Enable exponential backoff for retry intervals
-
-# Display options
-DISPLAY_NETWORK_STATUS=true  # Show network status overlay
-```
-
-## Usage
-
-### Manual Operation
-
-To run the application manually:
+#### Option 1: Complete Setup with Service (Recommended)
 
 ```bash
-source .venv/bin/activate
-uv run -m vimeo_monitor.monitor
+# Clone and install everything including system service
+git clone https://github.com/dcorso21/vimeo-monitor.git
+cd vimeo-monitor
+make setup-service
 ```
 
-### Checking Status
+This installs:
 
-To check the status of the service:
+- ✅ Application and dependencies
+- ✅ System service with auto-start at boot
+- ✅ Log rotation configuration
+- ✅ Security hardening and user isolation
+
+#### Option 2: Development Setup
+
+```bash
+# Clone and set up for development
+git clone https://github.com/dcorso21/vimeo-monitor.git
+cd vimeo-monitor
+make setup
+```
+
+#### Option 3: Manual Installation
+
+```bash
+# Step-by-step installation
+git clone https://github.com/dcorso21/vimeo-monitor.git
+cd vimeo-monitor
+
+# Install dependencies
+make install
+
+# Configure application
+cp .env.example .env
+nano .env  # Add your Vimeo API credentials
+
+# Optional: Install as system service
+sudo make install-service
+```
+
+### Essential Configuration
+
+Create/edit `.env` file with your Vimeo API credentials:
+
+```bash
+# Copy example configuration
+cp .env.example .env
+
+# Edit with your settings
+nano .env
+```
+
+**Required Settings:**
+
+```env
+# Vimeo API credentials (REQUIRED)
+VIMEO_ACCESS_TOKEN="your_vimeo_access_token"
+VIMEO_VIDEO_ID="your_video_id"
+
+# Media paths (create these directories and add images)
+HOLDING_IMAGE_PATH="./media/holding.jpg"
+API_FAIL_IMAGE_PATH="./media/failure.jpg"
+
+# Basic configuration
+LOG_LEVEL="INFO"
+CHECK_INTERVAL=30
+```
+
+**Network Monitoring (Optional):**
+
+```env
+# Network status overlay
+DISPLAY_NETWORK_STATUS=true
+OVERLAY_POSITION=top-right
+OVERLAY_UPDATE_INTERVAL=2
+
+# Network monitoring settings
+ENABLE_NETWORK_MONITORING=true
+NETWORK_CHECK_INTERVAL=30
+```
+
+### Quick Test
+
+Test the application before production deployment:
+
+```bash
+# Test basic functionality
+uv run -m vimeo_monitor.monitor
+
+# Should show status like:
+# 🎥 Status: Mode=STREAM | API=✅ HEALTHY | Stream=🟢 ACTIVE | Network=🟢 HEALTHY | Failures=0.0% | Uptime=5s
+```
+
+## 📋 Available Commands
+
+### Installation & Setup
+
+```bash
+make setup                 # Complete development setup
+make setup-service         # Complete setup + system service
+make install               # Install dependencies only
+make install-uv            # Install uv package manager
+make status               # Check system status
+```
+
+### Service Management
+
+```bash
+make install-service      # Install as system service
+make uninstall-service    # Remove system service
+make service-start        # Start the service
+make service-stop         # Stop the service
+make service-restart      # Restart the service
+make service-status       # Check service status
+make service-logs         # View live service logs
+```
+
+### Development & Testing
+
+```bash
+make test                 # Run all tests
+make test-network         # Run network monitoring tests
+make lint                 # Run code linting
+make format               # Format code
+make check                # Run linting + tests
+make clean                # Clean build artifacts
+```
+
+### Log Management
+
+```bash
+make analyze-logs         # Analyze log files
+make rotate-logs          # Manually rotate logs
+make clean-logs           # Clean old log files
+make compress-logs        # Compress logs to save space
+make clean-old-logs       # Remove logs older than 30 days
+```
+
+### Documentation
+
+```bash
+make docs                 # Build documentation
+make serve-docs           # Serve docs locally
+make help                 # Show all available commands
+```
+
+## 🖥️ Usage
+
+### Development Mode
+
+Run manually for development and testing:
+
+```bash
+# Run with terminal status display
+uv run -m vimeo_monitor.monitor
+
+# View logs in real-time
+tail -f logs/vimeo_monitor.log
+```
+
+### Production Service Mode
+
+For production deployment (Raspberry Pi, server):
+
+```bash
+# Install as system service
+sudo make install-service
+
+# Service will auto-start at boot
+# Manage with standard commands:
+make service-status       # Check if running
+make service-logs         # View live logs
+make service-restart      # Restart if needed
+```
+
+### Service Management
+
+**Linux (systemd):**
 
 ```bash
 sudo systemctl status vimeo-monitor
+sudo systemctl start vimeo-monitor
+sudo systemctl stop vimeo-monitor
+sudo journalctl -u vimeo-monitor -f
 ```
 
-### Viewing Logs
-
-To view the application logs:
+**macOS (launchd):**
 
 ```bash
-tail -f logs/vimeo_monitor.logs
-# or for systemd:
-sudo journalctl -fu vimeo-monitor
+sudo launchctl list | grep vimeomonitor
+sudo launchctl load /Library/LaunchDaemons/com.vimeomonitor.service.plist
+sudo launchctl unload /Library/LaunchDaemons/com.vimeomonitor.service.plist
+tail -f /opt/vimeo-monitor/logs/service.log
 ```
 
-### Updating
+## 🌐 Network Status Display
 
-To update to the latest version:
+The application provides real-time visual feedback through multiple display modes:
 
-```bash
-cd /path/to/vimeo-monitor
-git pull
-sudo systemctl restart vimeo-monitor
+### GUI Mode (Production/Raspberry Pi)
+
+- Professional overlay window with color-coded health indicators
+- Real-time API status (✅ Healthy / ❌ Failing)
+- Stream status (🟢 Active / 🟡 Standby / 🔴 Failure)
+- Network connectivity (🟢 Healthy / 🟡 Degraded / 🔴 Failing)
+- Performance metrics and uptime tracking
+
+### Terminal Mode (Development/SSH)
+
+- Status updates in application logs with emoji indicators
+- Same comprehensive metrics as GUI mode
+- Automatic fallback when GUI unavailable
+
+### Configuration
+
+```env
+DISPLAY_NETWORK_STATUS=true      # Enable overlay
+OVERLAY_POSITION=top-right       # top-left, top-right, bottom-left, bottom-right
+OVERLAY_OPACITY=0.8              # 0.0 (transparent) to 1.0 (opaque)
+OVERLAY_UPDATE_INTERVAL=2        # Update frequency in seconds
+OVERLAY_AUTO_HIDE=false          # Hide when healthy
 ```
 
-## Development
+## 🔧 Advanced Features
 
-### Development Setup
+### Network Monitoring & Fallback
 
-1. Set up the development environment:
+The application includes sophisticated network monitoring with intelligent fallback strategies:
 
-   ```bash
-   make install
-   pre-commit install
-   ```
+- **Multi-Protocol Monitoring**: TCP, HTTP, HTTPS, ICMP connectivity tests
+- **Adaptive Intervals**: Monitoring frequency adjusts based on network health
+- **Priority-Based Testing**: Critical targets only during network failure
+- **Endpoint Fallback**: Alternative hosts for each monitoring target
+- **Smart Recovery**: Gradual return to normal monitoring after recovery
 
-2. Run tests:
+### Service Security Features
 
-   ```bash
-   make test
-   ```
+Production deployments include enterprise-grade security:
 
-### Project Structure
+- **User Isolation**: Dedicated `vimeo-monitor` user with no login privileges
+- **File System Protection**: Read-only system access, limited write permissions
+- **Network Restrictions**: Only necessary network protocols allowed
+- **Resource Limits**: CPU, memory, and file descriptor limits
+- **System Call Filtering**: Restricted to essential operations only
 
-```bash
+### Log Management
+
+Comprehensive logging with automatic management:
+
+- **Automatic Rotation**: Daily rotation with configurable size limits
+- **Compression**: Automatic gzip compression of old logs
+- **Analysis Tools**: Built-in log analysis and statistics
+- **Retention Policy**: Configurable retention periods
+
+## 📁 Project Structure
+
+```
 vimeo-monitor/
-├── docs/                    # Documentation
-├── memory-bank/             # Design documents and planning
-├── services/                # Systemd service files
-├── vimeo_monitor/           # Main application code
-│   ├── __init__.py
-│   ├── monitor.py           # Main application logic
-│   └── utils/               # Utility functions
-├── .env.sample              # Example configuration
-├── pyproject.toml           # Project metadata and dependencies
-└── README.md                # This file
+├── docs/                           # Documentation
+│   ├── service_installation.md     # Service setup guide
+│   ├── network_fallback_strategies.md # Network monitoring docs
+│   ├── IMPLEMENTATION_SUMMARY.md   # Technical implementation details
+│   └── architecture.md             # System architecture
+├── scripts/                        # Installation scripts
+│   ├── install-service.sh          # System service installation
+│   ├── uninstall-service.sh        # Service removal
+│   └── config_migrate.py           # Configuration migration
+├── services/                       # System service files
+│   ├── vimeo-monitor.service       # Systemd service configuration
+│   ├── logrotation.conf            # Log rotation configuration
+│   └── log_management.py           # Log management utilities
+├── vimeo_monitor/                  # Main application code
+│   ├── monitor.py                  # Main application with orchestration
+│   ├── config.py                   # Configuration management
+│   ├── health.py                   # Health monitoring and API failure handling
+│   ├── network_monitor.py          # Network connectivity monitoring
+│   ├── overlay.py                  # Real-time status display system
+│   ├── client.py                   # Vimeo API client
+│   └── stream.py                   # Stream management and playback
+├── memory-bank/                    # Development planning and documentation
+├── .env.example                    # Example configuration file
+├── pyproject.toml                  # Project metadata and dependencies
+├── Makefile                        # Development and deployment automation
+└── README.md                       # This documentation
 ```
 
-### Roadmap
+## 🚧 System Requirements
 
-Current development priorities:
+### Development Environment
 
-- [In Progress] **Improve API Failure Handling**: Enhanced error detection, cooldown mechanism, and specific error handling
-- **Add Network Status Display**: On-screen network status indicator with stream health monitoring
-- **Implement Log Rotation**: Prevent disk space issues with configurable log rotation
-- **Create TUI Settings Panel**: Terminal-based configuration interface using Whiptail for SSH access
-- **Implement Prometheus Metrics**: HTTP `/metrics` endpoint for monitoring system health and performance
-- **Refactor Code Structure**: Improved modularity with object-oriented design
-- **Enhance Configuration Management**: Centralized configuration with validation and hot-reload support
+- **OS**: macOS, Linux, or Windows (with WSL)
+- **Python**: 3.11+
+- **Package Manager**: uv (auto-installed)
+- **Display**: Terminal-based status display
 
-## Troubleshooting
+### Production Environment (Raspberry Pi)
 
-### Common Issues
+- **Hardware**: Raspberry Pi 4/5 with 4GB+ RAM
+- **OS**: Raspberry Pi OS Desktop (Bookworm recommended)
+- **Display**: HDMI monitor for video output
+- **Network**: Ethernet or WiFi connectivity
+- **GUI**: X11 desktop environment (required for video display)
 
-- **Black Screen**: Check if the display is properly connected and X11 is running
-- **No Stream**: Verify your Vimeo credentials and stream ID
-- **API Failures**: Check network connectivity and Vimeo API status
+### System Dependencies
+
+**Linux/Raspberry Pi:**
+
+```bash
+sudo apt update && sudo apt install -y \
+    python3-pip python3-venv python3-tk \
+    ffmpeg curl make build-essential \
+    python3-tkinter xauth x11-apps
+```
+
+**macOS:**
+
+```bash
+# Install ffmpeg via Homebrew
+brew install ffmpeg
+
+# Python and other dependencies handled automatically
+```
+
+## 🔍 Troubleshooting
+
+### Common Installation Issues
+
+**Missing tkinter (Raspberry Pi):**
+
+```bash
+sudo apt install python3-tk python3-tkinter
+```
+
+**Missing ffmpeg:**
+
+```bash
+# Linux/Raspberry Pi
+sudo apt install ffmpeg
+
+# macOS
+brew install ffmpeg
+```
+
+**Service won't start:**
+
+```bash
+# Check status and logs
+make service-status
+make service-logs
+
+# Verify configuration
+sudo cat /opt/vimeo-monitor/.env
+
+# Test manual execution
+sudo -u vimeo-monitor /opt/vimeo-monitor/.venv/bin/python -m vimeo_monitor.monitor
+```
+
+### Network Issues
+
+**Connectivity problems:**
+
+```bash
+# Test network connectivity
+ping api.vimeo.com
+curl -I https://api.vimeo.com
+
+# Check DNS resolution
+nslookup api.vimeo.com
+
+# Run network monitoring tests
+make test-network
+```
+
+**Overlay not appearing:**
+
+```bash
+# Verify GUI environment
+python3 -c "import tkinter; print('✅ tkinter available')"
+
+# Check configuration
+grep DISPLAY_NETWORK_STATUS .env
+
+# Test X11 (if using SSH)
+echo $DISPLAY
+```
 
 ### Diagnostic Commands
 
 ```bash
-# Check if the process is running
-ps aux | grep vimeo_monitor
+# System status
+make status
 
-# Check display configuration
-echo $DISPLAY
+# Test installation
+uv run -m vimeo_monitor.monitor
 
-# Test network connectivity
-ping api.vimeo.com
+# Check logs
+tail -f logs/vimeo_monitor.log
+
+# Analyze logs
+make analyze-logs
+
+# Network monitoring test
+make test-network
 ```
 
-## Contributing
+## 📚 Documentation
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- **[Service Installation Guide](docs/service_installation.md)** - Complete service setup
+- **[Network Fallback Strategies](docs/network_fallback_strategies.md)** - Network monitoring details
+- **[Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md)** - Technical implementation
+- **[Architecture Documentation](docs/architecture.md)** - System design overview
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## 🛣️ Development Roadmap
 
-## License
+### ✅ Completed Features
+
+- **Network Monitoring**: Real-time connectivity tracking with fallback strategies
+- **System Service**: Cross-platform installation with security hardening
+- **Configuration Management**: Multi-format support with validation
+- **Log Management**: Automatic rotation, compression, and analysis
+- **Status Display**: GUI and terminal-based real-time overlays
+
+### 🚧 Upcoming Features
+
+- **Terminal UI (TUI)**: Interactive configuration and monitoring dashboard
+- **Performance Optimization**: Intelligent caching and resource management
+- **Advanced Monitoring**: Historical data tracking and alerting
+- **API Extensions**: Multi-stream support and plugin architecture
+- **Cloud Deployment**: Docker containers and cloud platform support
+
+## 🤝 Contributing
+
+Contributions are welcome! This project follows a documentation-driven development approach:
+
+1. **Fork** the repository
+2. **Create** your feature branch (`git checkout -b feature/amazing-feature`)
+3. **Document** your changes thoroughly
+4. **Test** your implementation (`make check`)
+5. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+6. **Push** to the branch (`git push origin feature/amazing-feature`)
+7. **Open** a Pull Request
+
+### Development Setup
+
+```bash
+# Set up development environment
+git clone https://github.com/dcorso21/vimeo-monitor.git
+cd vimeo-monitor
+make setup
+
+# Run tests and checks
+make check
+make test-network
+```
+
+## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgements
+## 🙏 Acknowledgements
 
-- [Vimeo API](https://developer.vimeo.com/) for the livestreaming capabilities
-- [Cursor Memory Bank](https://github.com/vanzan01/cursor-memory-bank) - A modular, documentation-driven framework used in development
-- [FFplay](https://ffmpeg.org/ffplay.html) for media playback
+- **[Vimeo API](https://developer.vimeo.com/)** - Livestreaming capabilities
+- **[uv Package Manager](https://github.com/astral-sh/uv)** - Fast Python package management
+- **[FFmpeg](https://ffmpeg.org/)** - Media playback and processing
+- **[Cursor Memory Bank](https://github.com/vanzan01/cursor-memory-bank)** - Documentation-driven development framework
+
+---
+
+## Support
+
+For issues, questions, or feature requests:
+
+1. **Check Logs**: Start with application and service logs
+2. **Review Documentation**: Check the comprehensive guides in `docs/`
+3. **Test Components**: Use `make test` and `make test-network`
+4. **Create Issue**: Open a GitHub issue with detailed information
+
+**Quick Help:**
+
+```bash
+make help                 # Show all available commands
+make status              # Check system status
+make service-logs        # View live service logs (if installed)
+tail -f logs/vimeo_monitor.log  # View application logs
+```

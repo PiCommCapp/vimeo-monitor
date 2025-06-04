@@ -1,0 +1,55 @@
+[Unit]
+Description=Vimeo Stream Monitor Service with Prometheus Metrics
+Documentation=https://github.com/dcorso21/vimeo-monitor
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=vimeo-monitor
+Group=vimeo-monitor
+WorkingDirectory=/opt/vimeo-monitor
+Environment=PATH=/opt/vimeo-monitor/.venv/bin:/usr/local/bin:/usr/bin:/bin
+Environment=PYTHONPATH=/opt/vimeo-monitor
+# Note: Prometheus metrics server runs on port 8000 by default
+ExecStart=/opt/vimeo-monitor/.venv/bin/python -m vimeo_monitor.monitor
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStartSec=30
+TimeoutStopSec=30
+Restart=always
+RestartSec=10
+
+# Security settings
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/vimeo-monitor/logs
+ReadWritePaths=/opt/vimeo-monitor/config_backups
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0027
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=32768
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vimeo-monitor
+
+[Install]
+WantedBy=multi-user.target

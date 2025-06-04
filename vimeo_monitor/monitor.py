@@ -1,61 +1,34 @@
 #!/usr/bin/env python3
 
-import os
-import time
-import subprocess
+"""Main application orchestrator for Vimeo stream monitoring."""
+
+import argparse
 import logging
+import logging.handlers
 import sys
+import time
 from pathlib import Path
-from typing import Optional, Dict, Any
-from dotenv import load_dotenv
-from vimeo import VimeoClient  # type: ignore[import-untyped]
-from requests.exceptions import RequestException
+from typing import Any
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Global variables for API failure tracking
-api_failure_count = 0
-api_success_count = 0
-api_failure_mode = False
-last_api_error: Optional[str] = None
-api_retry_interval = int(os.getenv("API_MIN_RETRY_INTERVAL", "10"))
-
-# Constants from environment
-API_FAILURE_THRESHOLD = int(os.getenv("API_FAILURE_THRESHOLD", "3"))
-API_STABILITY_THRESHOLD = int(os.getenv("API_STABILITY_THRESHOLD", "5"))
-API_MIN_RETRY_INTERVAL = int(os.getenv("API_MIN_RETRY_INTERVAL", "10"))
-API_MAX_RETRY_INTERVAL = int(os.getenv("API_MAX_RETRY_INTERVAL", "300"))
-API_ENABLE_BACKOFF = os.getenv("API_ENABLE_BACKOFF", "true").lower() == "true"
-
-# Vimeo API configuration
-VIMEO_TOKEN = os.getenv("VIMEO_TOKEN")
-VIMEO_KEY = os.getenv("VIMEO_KEY")
-VIMEO_SECRET = os.getenv("VIMEO_SECRET")
-VIMEO_STREAM_ID = os.getenv("VIMEO_STREAM_ID")
-CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL", "30"))
-
-# Image paths
-HOLDING_IMAGE_PATH = os.getenv("HOLDING_IMAGE_PATH")
-API_FAIL_IMAGE_PATH = os.getenv("API_FAIL_IMAGE_PATH")
-
-# Vimeo API client setup (original authentication method)
-client = VimeoClient(
-    token=VIMEO_TOKEN,
-    key=VIMEO_KEY,
-    secret=VIMEO_SECRET,
-)
-
-# Global variables for process management
-keep_looping = True
-current_process: Optional[subprocess.Popen[bytes]] = None
-current_mode: Optional[str] = None
+from vimeo_monitor.client import VimeoAPIClient
+from vimeo_monitor.config import ConfigManager, ConfigurationError
+from vimeo_monitor.health import HealthMonitor
+from vimeo_monitor.network_monitor import NetworkMonitor
+from vimeo_monitor.overlay import NetworkStatusOverlay
+from vimeo_monitor.performance import PerformanceOptimizer
+from vimeo_monitor.stream import StreamManager
 
 
-def setup_logging() -> None:
-    """Configure logging with proper error handling."""
-    log_file = os.getenv("LOG_FILE", "./logs/vimeo_monitor.logs")
-    log_level = os.getenv("LOG_LEVEL", "INFO")
+def setup_logging(config: ConfigManager) -> None:
+    """Configure logging with rotating file handler for automatic log rotation.
+
+    Args:
+        config: Configuration manager instance
+    """
+    log_file = config.log_file
+    log_level = config.log_level
+    max_size = config.log_rotate_max_size
+    backup_count = config.log_rotate_backup_count
 
     # Create logs directory if it doesn't exist
     log_path = Path(log_file)
@@ -64,291 +37,344 @@ def setup_logging() -> None:
     # Configure logging with proper handler types
     handlers: list[logging.Handler] = [logging.StreamHandler()]
 
-    # Only add file handler if LOG_FILE is specified
+    # Add rotating file handler if LOG_FILE is specified
     if log_file:
-        handlers.append(logging.FileHandler(log_file))
+        rotating_handler = logging.handlers.RotatingFileHandler(
+            log_file, maxBytes=max_size, backupCount=backup_count, encoding="utf-8"
+        )
+        handlers.append(rotating_handler)
+
+    # Enhanced logging format with more detail
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s")
+
+    # Apply formatter to all handlers
+    for handler in handlers:
+        handler.setFormatter(formatter)
 
     logging.basicConfig(
         level=getattr(logging, log_level.upper(), logging.INFO),
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=handlers
+        handlers=handlers,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(funcName)s:%(lineno)d - %(message)s",
     )
 
-
-def validate_configuration() -> bool:
-    """Validate required configuration is present."""
-    required_vars = {
-        "VIMEO_TOKEN": VIMEO_TOKEN,
-        "VIMEO_KEY": VIMEO_KEY,
-        "VIMEO_SECRET": VIMEO_SECRET,
-        "VIMEO_STREAM_ID": VIMEO_STREAM_ID,
-    }
-
-    missing_vars = [var for var, value in required_vars.items() if not value]
-
-    if missing_vars:
-        logging.error("Missing required environment variables: %s", ", ".join(missing_vars))
-        return False
-
-    # Validate image paths if specified
-    if HOLDING_IMAGE_PATH and not Path(HOLDING_IMAGE_PATH).exists():
-        logging.warning("HOLDING_IMAGE_PATH specified but file does not exist: %s", HOLDING_IMAGE_PATH)
-
-    if API_FAIL_IMAGE_PATH and not Path(API_FAIL_IMAGE_PATH).exists():
-        logging.warning("API_FAIL_IMAGE_PATH specified but file does not exist: %s", API_FAIL_IMAGE_PATH)
-
-    return True
+    # Log rotation configuration info
+    if log_file:
+        logging.info("Log rotation configured: max_size=%d bytes, backup_count=%d", max_size, backup_count)
 
 
-def calculate_backoff(current_interval: int) -> int:
-    """Calculate the next retry interval using exponential backoff."""
-    if not API_ENABLE_BACKOFF:
-        return API_MIN_RETRY_INTERVAL
+class MonitorApp:
+    """Main application orchestrator that coordinates all components."""
 
-    # Double the current interval
-    next_interval = current_interval * 2
+    def __init__(self, env_file: str = ".env", config_file: str | None = None) -> None:
+        """Initialize the monitor application.
 
-    # Cap at maximum
-    return min(next_interval, API_MAX_RETRY_INTERVAL)
-
-
-def handle_api_failure(error_type: str, error_message: str) -> None:
-    """Handle API failures and track consecutive failures."""
-    global api_failure_count, api_success_count, api_failure_mode, last_api_error
-
-    # Reset success counter and increment failure counter
-    api_success_count = 0
-    api_failure_count += 1
-    last_api_error = error_type
-
-    logging.error("API failure (%s): %s. Consecutive failures: %d",
-                 error_type, error_message, api_failure_count)
-
-    # Check if we should enter failure mode
-    if api_failure_count >= API_FAILURE_THRESHOLD:
-        if not api_failure_mode:
-            logging.warning("Entering API failure mode after %d consecutive failures",
-                           api_failure_count)
-            api_failure_mode = True
-
-
-def handle_api_success() -> None:
-    """Handle successful API responses and track consecutive successes."""
-    global api_failure_count, api_success_count, api_failure_mode, api_retry_interval
-
-    # Reset failure counter and increment success counter
-    api_failure_count = 0
-    api_success_count += 1
-
-    # If we're in failure mode, check if we should exit
-    if api_failure_mode and api_success_count >= API_STABILITY_THRESHOLD:
-        logging.info("Exiting API failure mode after %d consecutive successes",
-                   api_success_count)
-        api_failure_mode = False
-        api_retry_interval = API_MIN_RETRY_INTERVAL  # Reset backoff timer
-
-
-def get_vimeo_stream_data() -> Optional[Dict[str, Any]]:
-    """Fetch stream data from Vimeo API using original authentication method."""
-    if not VIMEO_STREAM_ID:
-        logging.error("No valid stream ID found for selection: %s", VIMEO_STREAM_ID)
-        return None
-
-    # Build the Vimeo API request URL (original method)
-    stream_url = f"https://api.vimeo.com/me/live_events/{VIMEO_STREAM_ID}/m3u8_playback"
-
-    try:
-        # Request JSON data using VimeoClient (original method)
-        response = client.get(stream_url)  # type: ignore[misc]
-        response_data = response.json()
-
-        # Add debug logging for the API response
-        logging.debug("Vimeo API Response: %s", response_data)
-
-        handle_api_success()
-        return response_data
-
-    except RequestException as e:
-        handle_api_failure("network", str(e))
-        logging.debug("Full error details:", exc_info=True)
-    except Exception as e:
-        handle_api_failure("unknown", str(e))
-        logging.exception("Unexpected error:")
-
-    return None
-
-
-def kill_current_process() -> None:
-    """Kill the current media player process."""
-    global current_process
-
-    if current_process and current_process.poll() is None:
-        logging.info("Killing current media player process")
+        Args:
+            env_file: Path to environment file
+            config_file: Optional path to YAML/TOML configuration file
+        """
         try:
-            current_process.terminate()
-            # Give process time to terminate gracefully
-            try:
-                current_process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                current_process.kill()
-                current_process.wait()
+            # Auto-detect config file if not specified
+            if config_file is None:
+                # Look for config files in config directory
+                project_root = Path(__file__).parent.parent
+                yaml_config = project_root / "config" / "config.yaml"
+                toml_config = project_root / "config" / "config.toml"
+
+                if yaml_config.exists():
+                    config_file = str(yaml_config)
+                    logging.debug("Auto-detected YAML config: %s", config_file)
+                elif toml_config.exists():
+                    config_file = str(toml_config)
+                    logging.debug("Auto-detected TOML config: %s", config_file)
+
+            # Initialize enhanced configuration with file support
+            from vimeo_monitor.config import EnhancedConfigManager
+
+            self.config = EnhancedConfigManager(
+                env_file=env_file, config_file=config_file, enable_live_reload=True, enable_backup=True
+            )
+
+            # Setup logging as early as possible
+            setup_logging(self.config)
+
+            # Initialize performance optimization system
+            enable_performance_optimization = getattr(self.config, "enable_performance_optimization", True)
+            if enable_performance_optimization:
+                self.performance_optimizer = PerformanceOptimizer(self.config)
+                logging.info("Performance optimization enabled")
+            else:
+                self.performance_optimizer = None
+                logging.info("Performance optimization disabled")
+
+            # Initialize components with dependency injection
+            self.health_monitor = HealthMonitor(self.config)
+            self.api_client = VimeoAPIClient(self.config, self.health_monitor, self.performance_optimizer)
+            self.stream_manager = StreamManager(self.config, self.health_monitor)
+            self.network_monitor = NetworkMonitor(self.config)
+
+            # Integrate network monitor with health monitor
+            self.health_monitor.set_network_monitor(self.network_monitor)
+
+            # Initialize overlay if enabled
+            self.status_overlay: NetworkStatusOverlay | None = None
+            if self.config.display_network_status:
+                self.status_overlay = NetworkStatusOverlay(
+                    lambda: self.health_monitor.get_enhanced_status(self.stream_manager.current_mode)
+                )
+
+            # Application state
+            self.keep_looping = True
+
+            logging.info("Monitor application initialized successfully")
+
+        except ConfigurationError as e:
+            logging.exception("Configuration error: %s", e)
+            raise
         except Exception as e:
-            logging.error("Error killing process: %s", e)
+            logging.exception("Failed to initialize monitor application: %s", e)
+            raise
+
+    def start(self) -> None:
+        """Start the monitoring application."""
+        try:
+            self._log_startup_info()
+            self._validate_system()
+
+            # Start performance optimization services
+            if self.performance_optimizer:
+                self.performance_optimizer.start()
+                logging.info("Performance optimization services started")
+
+            # Start network monitoring
+            if getattr(self.config, "enable_network_monitoring", True):
+                self.network_monitor.start_monitoring()
+                logging.info("Network monitoring started")
+
+            # Start overlay if configured
+            if self.status_overlay:
+                self.status_overlay.start()
+                logging.info("Network status overlay started")
+
+            # Run main monitoring loop
+            self._run_monitoring_loop()
+
+        except KeyboardInterrupt:
+            logging.info("Received interrupt signal. Shutting down...")
+        except Exception as e:
+            logging.exception("Unexpected error in monitoring application: %s", e)
         finally:
-            current_process = None
+            self._shutdown()
 
+    def _log_startup_info(self) -> None:
+        """Log application startup information."""
+        config_summary = self.config.get_summary()
+        api_info = self.api_client.get_api_info()
 
-def start_stream_playback(video_url: str) -> None:
-    """Start streaming video playback."""
-    global current_process
+        logging.info("Starting Vimeo stream monitor...")
+        logging.info("Configuration: %s", config_summary)
+        logging.info("API Configuration: %s", api_info)
+        logging.info(
+            "API Failure Handling: Threshold=%d, Stability=%d, Backoff=%s",
+            self.config.api_failure_threshold,
+            self.config.api_stability_threshold,
+            self.config.api_enable_backoff,
+        )
 
-    logging.info("Stream active. URL: %s", video_url)
+        # Log performance optimization status
+        if self.performance_optimizer:
+            perf_status = self.performance_optimizer.get_optimization_status()
+            metrics_summary = self.performance_optimizer.prometheus_metrics.get_metrics_summary()
 
-    # Use ffplay as in original (keeping original player choice)
-    play_command = [
-        "ffplay",
-        "-fs",           # fullscreen
-        "-autoexit",     # exit when playback finishes
-        "-loglevel", "quiet",  # reduce noise
-        video_url
-    ]
+            logging.info(
+                "Performance Optimization: Cache=%d/%d entries, Monitor=enabled",
+                perf_status["cache"]["size"],
+                perf_status["cache"]["max_size"],
+            )
 
-    logging.info("Executing stream command: %s", " ".join(play_command))
+            # Log metrics server status
+            if metrics_summary.get("metrics_server", {}).get("enabled"):
+                metrics_endpoint = metrics_summary["metrics_server"]["endpoint"]
+                logging.info("Prometheus metrics server enabled: %s", metrics_endpoint)
+            else:
+                logging.info("Prometheus metrics disabled")
 
-    try:
-        current_process = subprocess.Popen(play_command)
-    except Exception as e:
-        logging.error("Failed to start stream playback: %s", e)
+    def _validate_system(self) -> None:
+        """Validate system configuration and dependencies."""
+        # Validate API configuration
+        if not self.api_client.validate_configuration():
+            raise ConfigurationError("Invalid API configuration")
 
+        # Validate media paths
+        media_validation = self.stream_manager.validate_media_paths()
+        logging.info("Media path validation: %s", media_validation)
 
-def start_image_display(image_path: str, image_type: str = "holding") -> None:
-    """Start image display."""
-    global current_process
+        # Log warnings for missing optional files
+        if not media_validation["holding_image_exists"] and self.config.holding_image_path:
+            logging.warning("Holding image configured but not found: %s", self.config.holding_image_path)
 
-    if not image_path or not Path(image_path).exists():
-        logging.error("Image file not found or not configured: %s", image_path)
-        return
+        if not media_validation["api_fail_image_exists"] and self.config.api_fail_image_path:
+            logging.warning("API failure image configured but not found: %s", self.config.api_fail_image_path)
 
-    logging.info("Displaying %s image: %s", image_type, image_path)
+    def _run_monitoring_loop(self) -> None:
+        """Run the main monitoring loop."""
+        loop_count = 0
+        health_log_interval = max(10, int(300 / self.config.check_interval))  # Log health every ~5 minutes
+        performance_log_interval = max(20, int(600 / self.config.check_interval))  # Log performance every ~10 minutes
 
-    # Use ffplay as in original script
-    image_command = [
-        "ffplay",
-        "-fs",           # fullscreen
-        "-loop", "1",    # loop the image indefinitely
-        "-loglevel", "quiet",  # reduce noise
-        image_path
-    ]
+        while self.keep_looping:
+            try:
+                loop_count += 1
 
-    logging.info("Executing image command: %s", " ".join(image_command))
+                # Get stream data from API (with caching if enabled)
+                response_data = self.api_client.get_stream_data()
 
-    try:
-        current_process = subprocess.Popen(image_command)
-    except Exception as e:
-        logging.error("Failed to start image display: %s", e)
+                # Determine mode based on response and failure state
+                new_mode = self.stream_manager.determine_mode(response_data)
 
+                # Handle mode changes
+                self.stream_manager.handle_mode_change(new_mode, response_data)
 
-def determine_mode(response_data: Optional[Dict[str, Any]]) -> str:
-    """Determine which mode to run based on API response and failure state."""
-    if api_failure_mode:
-        return "api_failure"
-    elif response_data and "m3u8_playback_url" in response_data:
-        logging.debug("Found m3u8_playback_url in response")
-        return "stream"
-    else:
-        logging.debug("No m3u8_playback_url found in response. Full response: %s", response_data)
-        return "image"
+                # Check if current process is still healthy
+                self.stream_manager.check_process_health()
 
+                # Periodic performance optimization
+                if self.performance_optimizer and loop_count % 5 == 0:  # Every 5 loops
+                    self.performance_optimizer.periodic_optimization()
 
-def handle_mode_change(new_mode: str, response_data: Optional[Dict[str, Any]]) -> None:
-    """Handle switching between different modes."""
-    global current_mode
+                # Log periodic health summary
+                if loop_count % health_log_interval == 0:
+                    self.health_monitor.log_health_summary()
 
-    if new_mode == current_mode:
-        logging.info("No change in mode (%s)", current_mode)
-        return
+                # Log periodic performance summary
+                if self.performance_optimizer and loop_count % performance_log_interval == 0:
+                    self._log_performance_summary()
 
-    logging.info("Mode change: %s -> %s", current_mode, new_mode)
+                # Wait before next check with appropriate interval
+                self._wait_for_next_check()
 
-    # Kill existing process (if any)
-    kill_current_process()
+            except KeyboardInterrupt:
+                logging.info("Received interrupt signal in monitoring loop")
+                self.keep_looping = False
+            except Exception as e:
+                logging.exception("Unexpected error in monitoring loop: %s", e)
+                time.sleep(self.config.check_interval)
 
-    # Start new process based on mode
-    if new_mode == "stream" and response_data:
-        video_url = response_data["m3u8_playback_url"]
-        start_stream_playback(video_url)
-    elif new_mode == "api_failure" and API_FAIL_IMAGE_PATH:
-        logging.warning("API instability detected. Displaying failure image.")
-        start_image_display(API_FAIL_IMAGE_PATH, "failure")
-    elif new_mode == "image" and HOLDING_IMAGE_PATH:
-        logging.warning("Stream not active. Displaying static image.")
-        start_image_display(HOLDING_IMAGE_PATH, "holding")
-    else:
-        logging.warning("Cannot handle mode '%s' - missing configuration or image files", new_mode)
+    def _log_performance_summary(self) -> None:
+        """Log comprehensive performance summary."""
+        if not self.performance_optimizer:
+            return
 
-    current_mode = new_mode
+        perf_status = self.performance_optimizer.get_optimization_status()
 
+        # Cache statistics
+        cache_stats = perf_status.get("cache", {})
+        cache_hit_rate = cache_stats.get("hit_rate", 0) * 100
 
-def check_process_health() -> None:
-    """Check if the current process is still running and reset if needed."""
-    global current_process, current_mode
+        # Performance metrics
+        perf_metrics = perf_status.get("performance", {})
+        current_metrics = perf_status.get("current_metrics", {})
 
-    # If the media player process has ended unexpectedly, reset mode so it will be relaunched in the next loop
-    if current_process and current_process.poll() is not None:
-        logging.info("Media player process ended unexpectedly. Resetting mode.")
-        current_process = None
-        current_mode = None
+        logging.info(
+            "🚀 Performance Summary - Cache: %.1f%% hit rate (%d/%d entries) | "
+            "CPU: %.1f%% | Memory: %.1fMB | Threads: %d | API Avg: %.0fms",
+            cache_hit_rate,
+            cache_stats.get("size", 0),
+            cache_stats.get("max_size", 0),
+            current_metrics.get("cpu_percent", 0),
+            current_metrics.get("memory_mb", 0),
+            current_metrics.get("threads", 0),
+            perf_metrics.get("api_response_time", {}).get("avg_ms", 0),
+        )
+
+    def _wait_for_next_check(self) -> None:
+        """Wait for the appropriate interval before next check."""
+        if self.health_monitor.api_failure_mode:
+            wait_time = self.health_monitor.api_retry_interval
+            logging.info("In API failure mode. Waiting %d seconds before retry...", wait_time)
+            time.sleep(wait_time)
+            self.health_monitor.update_retry_interval()
+        else:
+            time.sleep(self.config.check_interval)
+
+    def _shutdown(self) -> None:
+        """Gracefully shutdown the application."""
+        logging.info("Shutting down monitor application...")
+
+        # Log final performance summary
+        if self.performance_optimizer:
+            self._log_performance_summary()
+
+        # Log final health summary
+        self.health_monitor.log_health_summary()
+
+        # Stop performance optimization services
+        if self.performance_optimizer:
+            self.performance_optimizer.stop()
+            logging.info("Performance optimization services stopped")
+
+        # Stop network monitoring
+        self.network_monitor.stop_monitoring()
+        logging.info("Network monitoring stopped")
+
+        # Stop overlay
+        if self.status_overlay:
+            self.status_overlay.stop()
+            logging.info("Network status overlay stopped")
+
+        # Shutdown stream manager
+        self.stream_manager.shutdown()
+
+        logging.info("Monitor application shutdown complete")
+
+    def stop(self) -> None:
+        """Stop the monitoring loop (for external control)."""
+        self.keep_looping = False
+
+    def get_performance_status(self) -> dict[str, Any]:
+        """Get current performance status for external monitoring."""
+        if self.performance_optimizer:
+            return self.performance_optimizer.get_optimization_status()
+        return {"error": "Performance optimization not enabled"}
+
+    def clear_caches(self) -> None:
+        """Clear all caches for fresh data."""
+        if self.performance_optimizer:
+            self.performance_optimizer.cache.clear()
+            logging.info("All caches cleared")
+        else:
+            logging.info("No caches to clear")
 
 
 def main() -> None:
-    """Main application loop."""
-    global keep_looping, api_retry_interval
+    """Main entry point for the application."""
+    parser = argparse.ArgumentParser(description="Vimeo Stream Monitor")
+    parser.add_argument("--env-file", default=".env", help="Path to environment file (default: .env)")
+    parser.add_argument(
+        "--config-file", help="Path to YAML/TOML configuration file (default: auto-detect from config/)"
+    )
+    parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        help="Override log level from configuration",
+    )
 
-    setup_logging()
-
-    if not validate_configuration():
-        logging.error("Configuration validation failed. Exiting.")
-        sys.exit(1)
-
-    logging.info("Starting Vimeo stream monitor...")
-    logging.info("Configuration: Stream ID: %s, Check interval: %ds",
-                VIMEO_STREAM_ID, CHECK_INTERVAL)
+    args = parser.parse_args()
 
     try:
-        while keep_looping:
-            try:
-                # Get stream data from API
-                response_data = get_vimeo_stream_data()
+        app = MonitorApp(env_file=args.env_file, config_file=args.config_file)
 
-                # Determine mode based on response and failure state
-                new_mode = determine_mode(response_data)
+        # Override log level if specified
+        if args.log_level:
+            logging.getLogger().setLevel(getattr(logging, args.log_level))
+            logging.info("Log level overridden to: %s", args.log_level)
 
-                # Handle mode changes
-                handle_mode_change(new_mode, response_data)
-
-                # Check if current process is still healthy
-                check_process_health()
-
-                # Wait before next check
-                if api_failure_mode:
-                    logging.info("In API failure mode. Waiting %d seconds before retry...", api_retry_interval)
-                    time.sleep(api_retry_interval)
-                    api_retry_interval = calculate_backoff(api_retry_interval)
-                else:
-                    time.sleep(CHECK_INTERVAL)
-
-            except KeyboardInterrupt:
-                logging.info("Received interrupt signal. Shutting down...")
-                keep_looping = False
-            except Exception as e:
-                logging.error("Unexpected error in main loop: %s", e)
-                logging.exception("Full traceback:")
-                time.sleep(CHECK_INTERVAL)
-
-    finally:
-        # Clean shutdown
-        kill_current_process()
-        logging.info("Vimeo stream monitor stopped.")
+        app.start()
+    except ConfigurationError as e:
+        logging.exception("Configuration error: %s", e)
+        sys.exit(1)
+    except Exception as e:
+        logging.exception("Fatal error: %s", e)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

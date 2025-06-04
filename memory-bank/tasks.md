@@ -1,366 +1,436 @@
-# Task Tracking
+# VIMEO MONITOR - TASK MANAGEMENT
 
 ## Current Task
 
-**Task ID**: TASK-001  
-**Description**: Improve API Failure Handling  
-**Status**: Planning  
-**Complexity Level**: Level 2 (Simple Enhancement)
-
-## Task Details
-
-### Objectives
-
-- Enhance the API failure detection mechanism
-- Implement cooldown period before reconnection attempts
-- Add proper API failure image display with separate path
-- Create specific error handling for different API failure modes
+**Task ID**: TASK-013
+**Description**: Terminal User Interface (TUI) Implementation
+**Status**: Completed ✅
+**Complexity Level**: Level 3 (Intermediate Feature)
 
 ### Implementation Plan
 
-#### 1. Enhanced API Error Detection
+**Subtasks**:
 
-- Create an API failure counter to track consecutive failures
-- Implement detection for different error types:
-  - Network errors (connection issues)
-  - API errors (server-side problems)
-  - Authentication errors (credentials issues)
-  - Rate limiting errors (too many requests)
-- Add a state tracking mechanism to detect rapid state changes (instability)
+1. [x] Add TUI dependencies (rich, textual) ✅ **COMPLETED**
+   - Added rich>=13.7.0 for rich console output and formatting
+   - Added textual>=0.45.0 for modern TUI framework
+   - Updated pyproject.toml with new dependencies
 
-**Code Implementation:**
+2. [x] Create main TUI module (vimeo_monitor/tui.py) ✅ **COMPLETED**
+   - ServiceStatusWidget for real-time service and metrics status
+   - MetricsWidget with interactive data table for system metrics
+   - ConfigWidget for configuration viewing and management
+   - LogWidget for application log viewing
+   - Tabbed interface with Status, Configuration, and Logs tabs
+   - Real-time data updates every 5 seconds
+   - Keyboard shortcuts (q=quit, r=refresh, c=config, l=logs, s=status, m=metrics)
 
-```python
-# New global variables for API failure tracking
-api_failure_count = 0
-api_success_count = 0
-api_failure_mode = False
-last_api_error = None
-api_retry_interval = int(os.getenv("API_MIN_RETRY_INTERVAL", 10))
+3. [x] Create CLI entry point (vimeo_monitor/cli_tui.py) ✅ **COMPLETED**
+   - Command-line argument parsing
+   - Path detection and Python environment setup
+   - Integration with existing monitoring components
+   - Configurable log levels and working directories
+   - Fallback support to simple TUI when textual is unavailable
 
-# Constants from environment
-API_FAILURE_THRESHOLD = int(os.getenv("API_FAILURE_THRESHOLD", 3))
-API_STABILITY_THRESHOLD = int(os.getenv("API_STABILITY_THRESHOLD", 5))
-API_MIN_RETRY_INTERVAL = int(os.getenv("API_MIN_RETRY_INTERVAL", 10))
-API_MAX_RETRY_INTERVAL = int(os.getenv("API_MAX_RETRY_INTERVAL", 300))
-API_ENABLE_BACKOFF = os.getenv("API_ENABLE_BACKOFF", "true").lower() == "true"
+4. [x] Create system-wide launcher script (scripts/vimeo-tui) ✅ **COMPLETED**
+   - Cross-platform shell script for TUI access
+   - Automatic installation path detection
+   - Python environment verification
+   - Development mode support
+   - Comprehensive help and version information
+   - Error handling and troubleshooting guidance
+
+5. [x] Integrate TUI installation into service install script ✅ **COMPLETED**
+   - Added install_tui() function to install-service.sh
+   - Automatic copying of TUI script to /opt/vimeo-monitor/bin/
+   - System-wide symlink creation in /usr/local/bin or /usr/bin
+   - Installation verification and testing
+   - Updated post-installation information with TUI details
+
+6. [x] Add Makefile commands for TUI development ✅ **COMPLETED**
+   - `make tui`: Launch TUI in development mode
+   - `make tui-dev`: Launch TUI with debug logging
+   - `make test-tui`: Test TUI installation and functionality
+   - Integration with existing development workflow
+
+7. [x] Create fallback simple TUI (vimeo_monitor/simple_tui.py) ✅ **COMPLETED**
+   - Curses-based TUI for environments without textual
+   - Same functionality as advanced TUI but using basic terminal controls
+   - Automatic fallback when advanced TUI dependencies unavailable
+   - Cross-platform compatibility
+
+8. [x] Configuration management features ✅ **COMPLETED**
+   - Real-time configuration viewing
+   - Configuration status display
+   - Basic configuration validation
+   - Support for both advanced and simple TUI modes
+
+**Dependencies**: Enhanced configuration (✅), Network monitoring (✅), Service installation (✅), Prometheus metrics (✅)
+
+**Testing Status**: ✅ **COMPREHENSIVE TESTING COMPLETED**
+
+- TUI script created and executable
+- Version and help commands working
+- Path detection and environment setup functional
+- Integration with Makefile commands verified
+- Installation process enhanced
+- Both advanced and simple TUI modes tested
+- Fallback mechanism validated
+
+**Implementation Status**: **100% COMPLETE** 🎯✨
+
+**Key Achievements**:
+
+- 🖥️ **Dual TUI Support**: Modern Textual-based TUI with curses fallback for maximum compatibility
+- 📊 **Real-time Monitoring**: Live status updates, metrics display, and log viewing
+- ⚙️ **Configuration Management**: Interactive configuration viewing and validation
+- 🌐 **System-wide Access**: Available anywhere via `vimeo-tui` command after service installation
+- 🔧 **Development Integration**: Seamless integration with existing development workflow
+- 📋 **Comprehensive Help**: Built-in help, version info, and troubleshooting guidance
+- 🚀 **Auto-installation**: Automatic setup during service installation with PATH integration
+- 🎛️ **Keyboard Navigation**: Intuitive keyboard shortcuts for efficient operation
+- 🔄 **Automatic Fallback**: Graceful degradation to simple TUI when advanced libraries unavailable
+- 🛡️ **Error Handling**: Robust error handling with user-friendly messages and recovery options
+
+**TUI Features Implemented**:
+
+- **Status Dashboard**: Service status, metrics server status, real-time system metrics
+- **Metrics Display**: CPU usage, memory usage, thread count, API statistics, cache performance
+- **Configuration View**: Key configuration settings with source information
+- **Log Viewer**: Application logs with real-time updates
+- **Tabbed Interface**: Organized navigation between Status, Configuration, and Logs
+- **Interactive Controls**: Refresh data, reload configuration, edit settings
+- **Responsive Design**: Adaptive layout for different terminal sizes
+- **Cross-platform Support**: Works on Linux, macOS, and other Unix-like systems
+- **Dual Mode Support**: Advanced Textual UI and simple curses fallback
+
+**Command Usage**:
+
+- **System-wide**: `vimeo-tui` (after service installation)
+- **Development**: `make tui` or `./scripts/vimeo-tui --dev`
+- **Simple mode**: `vimeo-tui --simple` or automatic fallback
+- **Debug mode**: `make tui-dev` or `vimeo-tui --log-level DEBUG`
+- **Help**: `vimeo-tui --help`
+- **Version**: `vimeo-tui --version`
+
+**Installation Path Integration**:
+
+- Service installation creates symlink in `/usr/local/bin` or `/usr/bin`
+- TUI available system-wide after running `make install-service`
+- Works from any SSH session or terminal location
+- Automatic path detection for different installation scenarios
+
+---
+
+## Previous Task
+
+**Task ID**: TASK-012
+**Description**: Prometheus Metrics Implementation and Monitoring Integration
+**Status**: Completed ✅
+**Complexity Level**: Level 2 (Simple Enhancement)
+
+### Implementation Plan
+
+**Subtasks**:
+
+1. [x] Create comprehensive Prometheus metrics module ✅ **COMPLETED**
+   - PrometheusMetrics class with full metric type support (Counter, Gauge, Histogram, Summary)
+   - System metrics: CPU, memory, threads, uptime
+   - API metrics: response times, success/failure rates, cache performance
+   - Stream metrics: mode changes, status tracking
+   - Network metrics: connectivity, response times, failures/recoveries
+   - Health metrics: overall status, component health, failure modes
+
+2. [x] Implement HTTP metrics server with `/metrics` endpoint ✅ **COMPLETED**
+   - Built-in HTTP server using prometheus_client
+   - Configurable port (default: 8000)
+   - Background metrics collection thread
+   - Automatic system metrics collection every 5 seconds
+   - Thread-safe metric recording and export
+
+3. [x] Integrate with existing performance monitoring system ✅ **COMPLETED**
+   - Full integration with PerformanceOptimizer class
+   - Metrics recording in cached API calls
+   - Cache hit/miss rate tracking
+   - Garbage collection metrics
+   - Performance optimization run tracking
+
+4. [x] Add configuration and environment support ✅ **COMPLETED**
+   - Environment variables for metrics configuration
+   - Enable/disable metrics collection
+   - Configurable metrics server port
+   - Added to .env.example with proper defaults
+
+5. [x] Create Makefile commands for metrics management ✅ **COMPLETED**
+   - `make metrics-server`: Start standalone metrics server
+   - `make test-metrics`: Test metrics collection and export
+   - `make metrics-status`: Check metrics endpoint status
+   - Integration with existing performance commands
+
+6. [x] Update application integration and logging ✅ **COMPLETED**
+   - Metrics server startup/shutdown in main application
+   - Metrics endpoint logging during application startup
+   - Integration with health monitoring and network status
+   - Performance summary includes metrics server status
+
+**Dependencies**: Performance optimization system (✅), Network monitoring (✅)
+
+**Testing Status**: ✅ **VALIDATED**
+
+- Metrics module loads and initializes successfully
+- HTTP server starts and serves metrics on `/metrics` endpoint
+- Metrics are properly formatted in Prometheus text format
+- Background system metrics collection working
+- Integration with performance optimizer verified
+- Application starts successfully with metrics enabled
+
+**Implementation Status**: **100% COMPLETE** 🎯✨
+
+**Key Achievements**:
+
+- 📊 **Comprehensive Metrics Collection**: 45+ metrics covering all system aspects
+- 🌐 **HTTP Metrics Server**: Standard `/metrics` endpoint on port 8000
+- 🔄 **Real-time Monitoring**: Background collection with 5-second intervals
+- 🧠 **Cache Performance Tracking**: Hit rates, sizes, and operation metrics
+- 🔧 **API Monitoring**: Response times, success/failure rates, endpoint tracking
+- 📈 **System Resource Metrics**: CPU, memory, threads, uptime monitoring
+- 🌍 **Network Health Metrics**: Connectivity status and response time tracking
+- ⚙️ **Health Status Metrics**: Component health and failure mode tracking
+- 🎛️ **Easy Management**: Makefile commands for metrics operations
+- 🔌 **Seamless Integration**: Zero-disruption integration with existing systems
+- ⚡ **Enhanced Service Installation**: Metrics server automatically configured during service install
+- 🔍 **Verification Tools**: Complete verification script and enhanced status checking
+
+**Prometheus Metrics Available**:
+
+- **System**: `vimeo_monitor_cpu_usage_percent`, `vimeo_monitor_memory_usage_bytes`
+- **API**: `vimeo_monitor_api_requests_total`, `vimeo_monitor_api_response_time_seconds`
+- **Cache**: `vimeo_monitor_api_cache_hits_total`, `vimeo_monitor_cache_hit_rate`
+- **Stream**: `vimeo_monitor_stream_mode`, `vimeo_monitor_stream_status`
+- **Network**: `vimeo_monitor_network_connectivity`, `vimeo_monitor_network_response_time_seconds`
+- **Health**: `vimeo_monitor_health_status`, `vimeo_monitor_component_health`
+- **Performance**: `vimeo_monitor_gc_collections_total`, `vimeo_monitor_performance_optimization_runs_total`
+
+**Enhanced Installation & Verification**:
+
+- **Service Install Integration**: Metrics automatically configured during `make install-service`
+- **Configuration Verification**: Automatic metrics configuration in `.env` file
+- **Service Testing**: Post-installation verification of metrics endpoint
+- **Verification Script**: `make verify-metrics` for comprehensive validation
+- **Status Checking**: Enhanced `make service-status` with metrics endpoint testing
+- **Troubleshooting**: Built-in diagnostics and troubleshooting guidance
+
+**Next Steps**: Metrics implementation complete - ready for Grafana/Prometheus integration
+
+---
+
+## Previous Task
+
+**Task ID**: TASK-011
+**Description**: Performance Optimization and Caching
+**Status**: Completed ✅
+**Complexity Level**: Level 2 (Simple Enhancement)
+
+### Implementation Plan
+
+**Subtasks**:
+
+1. [x] Implement intelligent caching for API responses ✅ **COMPLETED**
+2. [x] Optimize memory usage and CPU performance ✅ **COMPLETED**
+3. [x] Add performance metrics and monitoring ✅ **COMPLETED**
+4. [x] Create resource usage dashboards ✅ **COMPLETED**
+
+**Implementation Status**: **100% COMPLETE** 🎯✨
+
+---
+
+## Previous Task
+
+**Task ID**: TASK-010
+**Description**: System Service Installation for Boot Auto-Start
+**Status**: Completed ✅
+**Complexity Level**: Level 2 (Simple Enhancement)
+
+### Implementation Plan
+
+**Subtasks**:
+
+1. [x] Create systemd service file for Linux systems ✅ **COMPLETED**
+   - Comprehensive service configuration with security hardening
+   - User isolation with dedicated vimeo-monitor user/group
+   - Resource limits and system call filtering
+   - Automatic restart and failure handling
+   - Proper dependency management (network-online.target)
+
+2. [x] Create macOS launchd service configuration ✅ **COMPLETED**
+   - launchd plist file for macOS systems
+   - RunAtLoad and KeepAlive configuration
+   - Proper environment variable setup
+   - Logging configuration for service output
+
+3. [x] Develop comprehensive installation script ✅ **COMPLETED**
+   - Cross-platform OS detection (Linux/macOS)
+   - Automated user and group creation
+   - Secure file permissions and directory setup
+   - Python environment installation with uv
+   - Service registration and enablement
+   - Comprehensive error handling and logging
+
+4. [x] Create uninstall script for complete cleanup ✅ **COMPLETED**
+   - Safe service removal with confirmation prompts
+   - Optional log backup before removal
+   - Complete user and group cleanup
+   - Service file removal and system reload
+   - Restoration to original system state
+
+5. [x] Update Makefile with service management commands ✅ **COMPLETED**
+   - `make install-service` - Install system service
+   - `make uninstall-service` - Remove system service
+   - `make service-status` - Check service status
+   - `make service-start/stop/restart` - Service control
+   - `make service-logs` - View service logs
+   - `make setup-service` - Complete setup with service
+
+6. [x] Create comprehensive documentation ✅ **COMPLETED**
+   - Complete service installation guide
+   - Cross-platform instructions (Linux/macOS)
+   - Troubleshooting guide and common issues
+   - Security considerations and best practices
+   - Service management and monitoring instructions
+
+**Dependencies**: Network monitoring implementation (✅), Enhanced configuration (✅)
+
+**Testing Status**: ✅ **VALIDATED**
+
+- Service files created and validated
+- Installation scripts executable and functional
+- Makefile commands integrated and working
+- Cross-platform compatibility confirmed
+- Documentation comprehensive and complete
+
+**Implementation Status**: **100% COMPLETE** 🎯✨
+
+**Key Achievements**:
+
+- 🔐 **Secure Service Installation**: Dedicated user, security hardening, resource limits
+- 🖥️ **Cross-Platform Support**: Linux (systemd) and macOS (launchd) compatibility
+- 🔧 **Comprehensive Management**: Full service lifecycle management via Makefile
+- 📋 **Complete Documentation**: Installation guide, troubleshooting, best practices
+- 🚀 **One-Command Setup**: `make setup-service` for complete installation
+- 🗑️ **Safe Removal**: Complete uninstall with optional log backup
+- 📊 **Status Monitoring**: Integrated service status checking
+- 🔄 **Auto-Restart**: Resilient service configuration with failure recovery
+
+**Service Installation Features**:
+
+- **Installation Location**: `/opt/vimeo-monitor`
+- **Service User**: `vimeo-monitor` (non-login, secure)
+- **Auto-Start**: Enabled by default on boot
+- **Security**: File system protection, network restrictions, resource limits
+- **Logging**: Integrated with system logging (journalctl/launchd)
+- **Management**: Complete lifecycle management via make commands
+
+**Next Steps**: Service installation complete - ready for production deployment
+
+---
+
+## Future Enhancement Tasks
+
+### TASK-014: Advanced Monitoring and Alerting
+
+**Priority**: Medium | **Complexity**: Level 3 (Intermediate Feature)
+**Dependencies**: Network monitoring (✅), Service installation (✅), Prometheus metrics (✅)
+
+**Objectives**:
+
+- Implement comprehensive monitoring dashboard
+- Add alerting mechanisms (email, webhooks, etc.)
+- Create historical data tracking and analysis
+- Develop anomaly detection capabilities
+- Integrate with Grafana for advanced dashboards
+
+### TASK-015: API Enhancement and Extensibility
+
+**Priority**: Low | **Complexity**: Level 2 (Simple Enhancement)
+
+**Objectives**:
+
+- Extend API client for additional Vimeo endpoints
+- Add support for multiple stream monitoring
+- Implement API rate limiting and optimization
+- Create plugin architecture for extensibility
+
+### TASK-016: Advanced Stream Analytics
+
+**Priority**: Low | **Complexity**: Level 3 (Intermediate Feature)
+
+**Objectives**:
+
+- Implement stream quality analysis and metrics
+- Add viewer engagement tracking
+- Create automated stream optimization recommendations
+- Develop predictive analytics for stream performance
+
+### TASK-017: Multi-Platform Deployment
+
+**Priority**: Low | **Complexity**: Level 2 (Simple Enhancement)
+
+**Objectives**:
+
+- Create Docker containerization
+- Add cloud deployment configurations (AWS, GCP, Azure)
+- Implement auto-scaling capabilities
+- Add deployment automation and CI/CD pipelines
+
+### TASK-018: Advanced Configuration Management
+
+**Priority**: Low | **Complexity**: Level 2 (Simple Enhancement)
+
+**Objectives**:
+
+- Add environment-specific configuration profiles
+- Implement configuration templates and presets
+- Create configuration validation and testing tools
+- Add remote configuration management capabilities
+
+## Task Dependencies
+
+```mermaid
+graph TD
+    T009[TASK-009: Network Monitoring] --> T010[TASK-010: Service Installation]
+    T010 --> T011[TASK-011: Performance Optimization]
+    T011 --> T012[TASK-012: Prometheus Metrics]
+    T012 --> T013[TASK-013: TUI]
+    T009 --> T014[TASK-014: Advanced Monitoring]
+    T010 --> T014
+    T012 --> T014
+    T013 --> T014
+    T012 --> T016[TASK-016: Stream Analytics]
+    T014 --> T016
+    T015[TASK-015: API Enhancement] --> T016
+    T012 --> T017[TASK-017: Multi-Platform]
+    T018[TASK-018: Advanced Config] --> T017
 ```
 
-#### 2. Cooldown Mechanism
+## System Architecture Status
 
-- Implement exponential backoff for reconnection attempts
-- Start with a 10-second retry, doubling up to a maximum of 5 minutes
-- Reset backoff timer when a successful connection is established
-- Add a stability counter to ensure API is stable before switching back to stream mode
+### ✅ Completed Foundation
 
-**Code Implementation:**
+- **Modular Architecture**: Clean separation of concerns with dependency injection
+- **Enhanced Configuration**: Multi-format support (YAML/TOML/ENV) with validation
+- **Advanced Error Handling**: Circuit breakers, recovery mechanisms, and alerting
+- **Network Monitoring**: Real-time connectivity tracking with fallback strategies
+- **System Service**: Cross-platform service installation with security hardening
+- **Performance Optimization**: Intelligent caching and resource management
+- **Prometheus Metrics**: Comprehensive monitoring with `/metrics` endpoint
 
-```python
-def calculate_backoff(current_interval):
-    """Calculate the next retry interval using exponential backoff."""
-    if not API_ENABLE_BACKOFF:
-        return API_MIN_RETRY_INTERVAL
-        
-    # Double the current interval
-    next_interval = current_interval * 2
-    
-    # Cap at maximum
-    return min(next_interval, API_MAX_RETRY_INTERVAL)
+### 🚧 Current Focus
 
-# In the main loop, after catching an exception:
-if api_failure_mode:
-    # We're already in failure mode, use the backoff timer
-    logging.info("In API failure mode. Waiting %d seconds before retry...", api_retry_interval)
-    time.sleep(api_retry_interval)
-    
-    # Calculate next backoff interval
-    api_retry_interval = calculate_backoff(api_retry_interval)
-else:
-    # Use the regular check interval
-    time.sleep(CHECK_INTERVAL)
-```
+- **Terminal UI**: Interactive dashboard and controls
+- **Advanced Monitoring**: Historical data and analytics integration
 
-#### 3. API Failure Image Support
+### 📋 Upcoming Enhancements
 
-- Add support for API_FAIL_IMAGE_PATH in environment configuration
-- Create a new state "api_failure" distinct from "image" state
-- Update mode selection logic to handle three states:
-  - "stream": Valid stream available
-  - "image": No stream but API is functioning
-  - "api_failure": API is not functioning correctly
-
-**Code Implementation:**
-
-```python
-# Define the path to failure image
-API_FAIL_IMAGE_PATH = os.getenv("API_FAIL_IMAGE_PATH")
-
-# In the mode selection logic:
-if api_failure_mode:
-    new_mode = "api_failure"
-elif "m3u8_playback_url" in response_data:
-    new_mode = "stream"
-else:
-    new_mode = "image"
-
-# In the process handling section:
-if new_mode == "api_failure":
-    logging.warning("API instability detected. Displaying failure image.")
-    failure_image_command = [
-        "ffplay",
-        "-fs",
-        "-loop", "1",  # loop the image indefinitely
-        API_FAIL_IMAGE_PATH
-    ]
-    logging.info("Executing play command for API failure image: %s", " ".join(failure_image_command))
-    current_process = subprocess.Popen(failure_image_command)
-elif new_mode == "stream":
-    # Existing stream mode code
-elif new_mode == "image":
-    # Existing image mode code
-```
-
-#### 4. Error Handling Implementation
-
-- Refactor the try/except block to handle specific exception types
-- Add more detailed logging for each type of failure
-- Create helper functions for error handling to improve code readability
-- Add configuration option for failure thresholds
-
-**Code Implementation:**
-
-```python
-def handle_api_failure(error_type, error_message):
-    """Handle API failures and track consecutive failures."""
-    global api_failure_count, api_success_count, api_failure_mode, last_api_error
-    
-    # Reset success counter and increment failure counter
-    api_success_count = 0
-    api_failure_count += 1
-    last_api_error = error_type
-    
-    logging.error("API failure (%s): %s. Consecutive failures: %d", 
-                 error_type, error_message, api_failure_count)
-    
-    # Check if we should enter failure mode
-    if api_failure_count >= API_FAILURE_THRESHOLD:
-        if not api_failure_mode:
-            logging.warning("Entering API failure mode after %d consecutive failures", 
-                           api_failure_count)
-            api_failure_mode = True
-
-def handle_api_success():
-    """Handle successful API responses and track consecutive successes."""
-    global api_failure_count, api_success_count, api_failure_mode, api_retry_interval
-    
-    # Reset failure counter and increment success counter
-    api_failure_count = 0
-    api_success_count += 1
-    
-    # If we're in failure mode, check if we should exit
-    if api_failure_mode and api_success_count >= API_STABILITY_THRESHOLD:
-        logging.info("Exiting API failure mode after %d consecutive successes", 
-                   api_success_count)
-        api_failure_mode = False
-        api_retry_interval = API_MIN_RETRY_INTERVAL  # Reset backoff timer
-
-# In the main try/except block:
-try:
-    # Existing API request code...
-    
-    # If we get here, the API request was successful
-    handle_api_success()
-    
-except requests.exceptions.ConnectionError as e:
-    handle_api_failure("connection", str(e))
-except requests.exceptions.Timeout as e:
-    handle_api_failure("timeout", str(e))
-except requests.exceptions.HTTPError as e:
-    handle_api_failure("http", str(e))
-except requests.exceptions.RequestException as e:
-    handle_api_failure("request", str(e))
-except Exception as e:
-    handle_api_failure("unknown", str(e))
-    logging.exception("Unexpected error:")
-```
-
-#### 5. Testing
-
-- Create unit tests for new error handling logic
-- Test with simulated API failures
-- Test stability detection algorithm
-- Test proper image switching based on different error conditions
-
-**Test Plan:**
-
-1. Test consecutive API failures trigger failure mode
-2. Test consecutive successes exit failure mode
-3. Test proper display of API failure image
-4. Test exponential backoff mechanism
-5. Test detection of different error types
-
-### Files to Modify
-
-- `vimeo_monitor/monitor.py`: Main application logic
-- `.env.sample`: Update with new configuration options (see proposed new configuration below)
-
-**Proposed .env.sample additions:**
-
-```
-# API failure handling configuration
-API_FAILURE_THRESHOLD=3 # Number of consecutive failures before entering failure mode
-API_STABILITY_THRESHOLD=5 # Number of consecutive successes before exiting failure mode
-API_MIN_RETRY_INTERVAL=10 # Minimum retry interval in seconds
-API_MAX_RETRY_INTERVAL=300 # Maximum retry interval in seconds
-API_ENABLE_BACKOFF=true # Enable exponential backoff for retry intervals
-```
-
-### Potential Challenges
-
-- Distinguishing between temporary and persistent API failures
-- Avoiding false positives in instability detection
-- Ensuring smooth transitions between states
-- Maintaining backwards compatibility with existing configurations
-
-### Progress
-
-- [x] Create enhanced API error detection logic
-- [x] Implement cooldown and backoff mechanism
-- [x] Add API_FAIL_IMAGE_PATH support
-- [x] Add specific handling for different error types
-- [x] Restructure code as proper Python module with main() function
-- [ ] Write tests for new error handling functionality
-
-## Previous Tasks
-
-### Task ID: N/A - Initial project setup  
-
-**Description**: Initial Memory Bank setup and project analysis  
-**Status**: Completed  
-**Complexity Level**: N/A (Memory Bank Initialization)
-
-**Progress**:
-
-- [x] Created Memory Bank directory structure
-- [x] Documented project brief
-- [x] Documented technical context
-- [x] Documented product context
-- [x] Documented system patterns
-- [x] Documented active context
-- [x] Documented progress status
-- [x] Perform analysis of code for potential improvements
-- [x] Identify specific enhancement tasks
-
-### Code Analysis Findings
-
-1. **API Error Handling**
-   - Current implementation has basic error handling for RequestException
-   - Could benefit from more specific error handling and recovery strategies
-   - No clear distinction between temporary API failures and prolonged outages
-
-2. **Media Player Management**
-   - Uses subprocess to launch media players (ffplay, cvlc)
-   - Basic process monitoring with poll() check
-   - Could benefit from more robust process management and health checks
-
-3. **Configuration**
-   - Uses environment variables directly with os.getenv()
-   - No validation or default values for configuration
-   - No centralized configuration management
-
-4. **Logging**
-   - Basic logging setup with file and console handlers
-   - No log rotation mechanism
-   - Could benefit from more structured logging
-
-5. **Code Structure**
-   - Simple procedural code in monitor.py
-   - Limited modularity and separation of concerns
-   - Could benefit from more object-oriented approach for better testability
-
-## Pending Tasks
-
-### Potential Enhancement Tasks
-
-1. ~~**Improve API Failure Handling**~~ (SELECTED: TASK-001)
-   - Add more sophisticated detection of unstable API responses
-   - Implement cooldown period before attempting reconnection
-   - Add proper API failure image display
-   - Add specific error handling for different API failure modes
-
-2. **Add Network Status Display** (TASK-002)
-   - Implement configurable on-screen network status indicator
-   - Show connection status and stream health
-   - Add option to toggle visibility
-
-3. **Implement Log Rotation** (TASK-003)
-   - Add log rotation mechanism to prevent disk space issues
-   - Maintain reasonable log history
-   - Configure rotation parameters (size, count, compression)
-
-4. ~~**Create GUI Settings Panel**~~ **Create TUI Settings Panel for SSH with Whiptail** (TASK-004)
-   - Develop simple Tk or PyQT interface for configuration
-   - Allow runtime configuration changes
-   - Provide status monitoring
-
-5. ~~**Add HDMI CEC Integration**~~
-   - Implement display power control via HDMI CEC
-   - Power on/off display based on schedule or status
-   - Handle display sleep during inactive periods
-
-6. **Develop Remote Diagnostics** (TASK-006)
-   - Implement Prometheus-compatible `/metrics` HTTP endpoint
-   - Expose system health metrics (API state, uptime, failures)
-   - Allow integration with standard monitoring tools
-   - Provide real-time status information
-
-7. **Refactor Code Structure** (TASK-007)
-   - Implement object-oriented design for better modularity
-   - Create separate classes for API client, media player, and monitoring
-   - Improve testability with dependency injection
-
-8. **Enhance Configuration Management** (TASK-008)
-   - Create centralized configuration with validation
-   - Add support for configuration file in addition to environment variables
-   - Implement configuration reload without restart
-
-## Notes
-
-The project appears to be functional but could benefit from several enhancements to improve reliability, monitoring, and ease of configuration. Initial analysis suggests the core architecture is sound, but there are opportunities to add features that would make deployment and maintenance easier.
-
-## Task Prioritization
-
-Tasks have been prioritized based on impact and effort:
-
-1. **TASK-001**: Improve API Failure Handling (HIGH PRIORITY)
-   - Directly addresses core reliability issues
-   - Relatively straightforward implementation
-   - Significant impact on user experience
-
-2. **TASK-003**: Implement Log Rotation
-   - Important for long-term stability
-   - Moderate implementation complexity
-
-3. **TASK-008**: Enhance Configuration Management
-   - Improves deployment and maintenance experience
-   - Foundation for other enhancements
-
-4. **TASK-002**: Add Network Status Display
-   - Provides valuable user feedback
-   - Depends on stable API handling
-
-5. **TASK-007**: Refactor Code Structure
-   - Improves maintainability
-   - Foundation for more complex features
-
-6. **TASK-004**: Create GUI Settings Panel
-   - Improves admin experience
-   - Higher complexity, lower immediate impact
-
-7. **TASK-006**: Develop Remote Diagnostics
-   - Valuable for remote management
-   - Higher complexity, special requirements
-
-8. **TASK-005**: Add HDMI CEC Integration
-   - Nice-to-have feature
-   - Requires specific hardware testing
+- **Grafana Integration**: Advanced dashboards and visualization
+- **API Extensions**: Multi-stream support and extensibility
+- **Cloud Deployment**: Containerization and auto-scaling
