@@ -169,6 +169,7 @@ cython_debug/
 .env
 .env.local
 .env.production
+.env.bak
 
 # Working configuration files (copied from templates)
 # config/config.yaml
