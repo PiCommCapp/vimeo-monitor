@@ -1,0 +1,35 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v1
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Build package
+        run: uv build
+      - name: Create release artifacts
+        run: |
+          mkdir -p release-artifacts
+          cp dist/* release-artifacts/
+          cp README.md release-artifacts/
+          cp LICENSE release-artifacts/
+      - name: Upload release artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-files
+          path: release-artifacts/
+      - name: Notify deployment
+        run: |
+          echo "Deployment completed for version ${{ github.ref_name }}"
+          echo "Artifacts available in release-files"

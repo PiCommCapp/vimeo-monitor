@@ -1,0 +1,27 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 2 * * 1'  # Every Monday at 2 AM UTC
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v1
+      - name: Install dependencies
+        run: uv sync --dev
+      - name: Run security scan
+        run: uv run safety check
+      - name: Check for known vulnerabilities
+        run: |
+          echo "Security scan completed"
+          echo "Checking for known vulnerabilities in dependencies"

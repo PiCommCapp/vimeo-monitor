@@ -3,6 +3,7 @@
 A robust Python application for monitoring Vimeo live streams with automatic failover, health monitoring, network status tracking, and cross-platform system service deployment.
 
 ## 🚀 Key Features
+![CI Pipeline](https://github.com/picommcapp/vimeo-monitor/workflows/CI%20Pipeline/badge.svg)
 
 - **🎥 Automated Stream Monitoring**: Continuously monitors Vimeo live stream status with intelligent failover
 - **🌐 Network Health Monitoring**: Real-time network connectivity tracking with fallback strategies

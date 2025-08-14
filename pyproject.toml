@@ -37,6 +37,7 @@ repository = "https://github.com/picommcapp/vimeo-monitor"
 
 [dependency-groups]
 dev = [
+    "safety>=2.3.0",
     "pytest>=8.4.0",
     "pre-commit>=4.2.0",
     "tox-uv>=1.26.0",

@@ -1,6 +1,5 @@
 {
   "recommendations": [
-
     "charliermarsh.ruff",
     "anysphere.pyright",
     "davidanson.vscode-markdownlint",
