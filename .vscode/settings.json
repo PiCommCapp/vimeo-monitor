@@ -103,5 +103,9 @@
       "**/*.json",
       "**/*.yaml",
       "**/*.yml"
-    ]
+    ],
+  "cSpell.enabledFileTypes": {
+  "*": false,
+  "markdown": true
+}
   }
