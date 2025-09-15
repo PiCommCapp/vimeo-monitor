@@ -22,10 +22,21 @@ classifiers = [
 license = "MIT"
 
 dependencies = [
-  "pyvimeo=>1.1.2"
+  "pyvimeo>=1.1.2",
+  "python-dotenv>=1.0.0"
 ]
 
 requires-python = ">= 3.12"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+vimeo_monitor = ["*.py"]
 
 [dependency-groups]
 dev = [

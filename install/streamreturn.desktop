@@ -2,6 +2,6 @@
 Type=Application
 Name=Vimeo Stream Monitor
 Comment=Launch Vimeo Stream Monitor at startup
-Exec=/bin/bash -c 'uv run /home/admin/code/vimeo-monitor/streamreturn.py'
+Exec=/bin/bash -c 'cd /home/admin/code/vimeo-monitor && uv run streammonitor.py'
 Terminal=false
 Hidden=false
