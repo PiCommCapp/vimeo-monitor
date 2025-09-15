@@ -23,6 +23,12 @@ class ProcessManager:
         self.process_logger = LoggingContext(logger, "PROCESS")
         self.current_process: Optional[subprocess.Popen] = None
         self.current_mode: Optional[str] = None
+        
+        # Auto-restart configuration
+        self.restart_count = 0
+        self.max_restarts = 5  # Maximum number of consecutive restarts
+        self.restart_delay = 5  # Seconds to wait before restart
+        self.last_restart_time = 0
     
     def start_stream_process(self, video_url: str) -> None:
         """Start VLC process for live stream."""
@@ -119,6 +125,16 @@ class ProcessManager:
         
         return self.current_process.poll() is None
     
+    def should_restart(self) -> bool:
+        """Check if process should be restarted based on restart policy."""
+        current_time = time.time()
+        
+        # Reset restart count if enough time has passed
+        if current_time - self.last_restart_time > 300:  # 5 minutes
+            self.restart_count = 0
+        
+        return self.restart_count < self.max_restarts
+    
     def get_process_status(self) -> dict:
         """Get current process status information."""
         return {
@@ -128,16 +144,39 @@ class ProcessManager:
             "return_code": self.current_process.returncode if self.current_process else None
         }
     
-    def restart_process(self) -> None:
+    def restart_process(self) -> bool:
         """Restart the current process if it has stopped unexpectedly."""
         if not self.is_process_running() and self.current_mode:
-            self.process_logger.warning(f"Process stopped unexpectedly, restarting {self.current_mode} mode")
+            if not self.should_restart():
+                self.process_logger.error(f"Maximum restart attempts ({self.max_restarts}) exceeded. Process will not be restarted.")
+                return False
             
-            if self.current_mode == "stream":
-                # We need the video URL to restart - this will be handled by the monitor
-                self.process_logger.error("Cannot restart stream process without video URL")
-            elif self.current_mode == "image":
-                self.start_image_process(self.config.static_image_path)
+            self.restart_count += 1
+            self.last_restart_time = time.time()
+            
+            self.process_logger.warning(f"Process stopped unexpectedly, restarting {self.current_mode} mode (attempt {self.restart_count}/{self.max_restarts})")
+            
+            # Wait before restart
+            time.sleep(self.restart_delay)
+            
+            # Restart based on current mode
+            try:
+                if self.current_mode == "stream":
+                    # Note: We need the video URL to restart stream, this will be handled by the monitor
+                    self.process_logger.info("Stream restart requested - monitor will handle restart with video URL")
+                elif self.current_mode == "image":
+                    self.start_image_process(self.config.static_image_path)
+                elif self.current_mode == "error":
+                    self.start_error_process(self.config.error_image_path)
+                
+                self.process_logger.info(f"Process restarted successfully in {self.current_mode} mode")
+                return True
+                
+            except Exception as e:
+                self.process_logger.error(f"Failed to restart process: {e}")
+                return False
+        
+        return True
     
     def cleanup(self) -> None:
         """Clean up on shutdown."""

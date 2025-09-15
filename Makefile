@@ -47,6 +47,15 @@ test:
 	@echo "Running Vimeo Monitor in test mode (5 second timeout)..."
 	@timeout 5 uv run streammonitor.py || echo "Test completed"
 
+# Run unit tests
+test-unit:
+	@echo "Running unit tests..."
+	@uv run python -m pytest tests/ -v
+
+# Run all tests
+test-all: test test-unit
+	@echo "All tests completed"
+
 # Run Vimeo Monitor
 run:
 	@echo "Starting Vimeo Monitor..."
@@ -95,6 +104,15 @@ clean:
 	@rm -rf *.egg-info/
 	@rm -rf vimeo_monitor.egg-info/
 	@echo "Clean complete!"
+
+# Installation targets
+install:
+	@echo "Running installation script..."
+	@./scripts/install.sh
+
+uninstall:
+	@echo "Running uninstallation script..."
+	@./scripts/uninstall.sh
 
 # Development workflow - setup and serve
 dev: setup serve

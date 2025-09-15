@@ -26,9 +26,7 @@ class VimeoMonitorApp:
         self.monitor: Optional[Monitor] = None
         self.running = False
         
-        # Health monitoring
-        self.last_health_check = 0
-        self.health_check_interval = 60  # Check health every 60 seconds
+        # System tracking
         self.system_start_time = time.time()
     
     def initialize(self) -> bool:
@@ -76,16 +74,9 @@ class VimeoMonitorApp:
                     # Run monitoring cycle
                     self.monitor.run_monitoring_cycle()
                     
-                    # Check process health
-                    if not self.process_manager.health_check():
-                        self.app_logger.warning("Process health check failed")
-                        self.process_manager.restart_process()
-                    
-                    # Periodic health monitoring
-                    current_time = time.time()
-                    if current_time - self.last_health_check >= self.health_check_interval:
-                        self._perform_health_check()
-                        self.last_health_check = current_time
+                    # Check if stream needs restart
+                    if not self.monitor.restart_stream_if_needed():
+                        self.app_logger.warning("Stream restart failed")
                     
                     # Wait for configured interval
                     time.sleep(config.check_interval)
@@ -105,24 +96,22 @@ class VimeoMonitorApp:
         
         return 0
     
-    def _perform_health_check(self) -> None:
-        """Perform comprehensive health check and log status."""
+    def get_system_status(self) -> dict:
+        """Get current system status information."""
         try:
             uptime = time.time() - self.system_start_time
             monitor_status = self.monitor.get_status_info()
+            process_status = self.process_manager.get_process_status()
             
-            self.app_logger.info(f"Health Check - Uptime: {uptime:.0f}s, "
-                               f"Consecutive Errors: {monitor_status['consecutive_errors']}, "
-                               f"Healthy: {monitor_status['is_healthy']}")
-            
-            # Log detailed status if there are issues
-            if not monitor_status['is_healthy']:
-                self.app_logger.warning(f"System unhealthy - "
-                                      f"Time since last success: {monitor_status['time_since_last_success']:.0f}s, "
-                                      f"Process status: {monitor_status['process_status']}")
-            
+            return {
+                "uptime": uptime,
+                "monitor_status": monitor_status,
+                "process_status": process_status,
+                "running": self.running
+            }
         except Exception as e:
-            self.app_logger.error(f"Health check failed: {e}")
+            self.app_logger.error(f"Failed to get system status: {e}")
+            return {"error": str(e)}
     
     def shutdown(self) -> None:
         """Graceful shutdown of all components."""

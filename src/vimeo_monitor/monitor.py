@@ -38,6 +38,9 @@ class Monitor:
         self.last_successful_check = time.time()
         self.error_threshold = 5  # Show error image after 5 consecutive failures
         
+        # Stream restart tracking
+        self.last_stream_url = None
+        
         # Initialize Vimeo client
         try:
             self.api_client = VimeoClient(**config.get_vimeo_client_config())
@@ -66,6 +69,7 @@ class Monitor:
                 
                 if "m3u8_playback_url" in response_data:
                     video_url = response_data["m3u8_playback_url"]
+                    self.last_stream_url = video_url  # Store for potential restart
                     self.monitor_logger.debug("Found m3u8_playback_url in response")
                     return StreamStatus.LIVE, video_url
                 else:
@@ -142,6 +146,14 @@ class Monitor:
     def run_monitoring_cycle(self) -> None:
         """Run one monitoring cycle."""
         try:
+            # Check if process needs restart
+            if not self.process_manager.is_process_running():
+                restart_success = self.process_manager.restart_process()
+                if not restart_success:
+                    self.monitor_logger.error("Process restart failed - showing error image")
+                    self.process_manager.start_error_process(self.config.error_image_path)
+                    return
+            
             status, video_url = self.check_stream_status()
             self.update_display(status, video_url)
         except Exception as e:
@@ -168,3 +180,19 @@ class Monitor:
     def is_healthy(self) -> bool:
         """Check if the monitoring system is healthy."""
         return self.consecutive_errors < self.error_threshold
+    
+    def restart_stream_if_needed(self) -> bool:
+        """Restart stream process if needed and we have a valid URL."""
+        if (self.process_manager.current_mode == "stream" and 
+            not self.process_manager.is_process_running() and 
+            self.last_stream_url):
+            
+            self.monitor_logger.info(f"Restarting stream process with URL: {self.last_stream_url}")
+            try:
+                self.process_manager.start_stream_process(self.last_stream_url)
+                return True
+            except Exception as e:
+                self.monitor_logger.error(f"Failed to restart stream process: {e}")
+                return False
+        
+        return True
