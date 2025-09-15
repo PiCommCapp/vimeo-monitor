@@ -1,19 +1,36 @@
 # Vimeo Monitor Makefile
 # Makefile for Vimeo Monitor project with uv, autostart, and cleanup commands
 
-.PHONY: help install setup serve build clean autostart-install autostart-remove test run
+.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-all run lint lint-strict format lint-fix uninstall
 
 # Default target
 help:
 	@echo "Vimeo Monitor - Available commands:"
-	@echo "  install         - Install uv package manager"
+	@echo ""
+	@echo "Development:"
 	@echo "  setup           - Create virtual environment and install dependencies"
 	@echo "  test            - Run the Vimeo Monitor (test mode)"
+	@echo "  test-unit       - Run unit tests"
+	@echo "  test-all        - Run all tests (system + unit)"
 	@echo "  run             - Run the Vimeo Monitor"
+	@echo ""
+	@echo "Code Quality:"
+	@echo "  lint            - Run basic linting (ruff, black, isort)"
+	@echo "  lint-strict     - Run strict linting (includes mypy type checking)"
+	@echo "  format          - Auto-format code with black and isort"
+	@echo "  lint-fix        - Auto-fix linting issues"
+	@echo ""
+	@echo "Installation:"
+	@echo "  install         - Run automated installation script"
+	@echo "  uninstall       - Run automated uninstallation script"
 	@echo "  autostart-install - Install autostart desktop files"
 	@echo "  autostart-remove  - Remove autostart desktop files"
+	@echo ""
+	@echo "Documentation:"
 	@echo "  serve           - Start MkDocs development server"
 	@echo "  build           - Build MkDocs static site"
+	@echo ""
+	@echo "Maintenance:"
 	@echo "  clean           - Clean all build artifacts and temporary files"
 	@echo "  help            - Show this help message"
 
@@ -55,6 +72,50 @@ test-unit:
 # Run all tests
 test-all: test test-unit
 	@echo "All tests completed"
+
+# Lint the codebase
+lint:
+	@echo "Running code linting..."
+	@echo "Running ruff (fast linter)..."
+	@uv run ruff check src/ tests/ streammonitor.py
+	@echo "Running black (code formatter)..."
+	@uv run black --check src/ tests/ streammonitor.py
+	@echo "Running isort (import sorter)..."
+	@uv run isort --check-only src/ tests/ streammonitor.py
+	@echo "Linting completed successfully!"
+
+# Lint with type checking
+lint-strict:
+	@echo "Running strict code linting..."
+	@echo "Running ruff (fast linter)..."
+	@uv run ruff check src/ tests/ streammonitor.py
+	@echo "Running black (code formatter)..."
+	@uv run black --check src/ tests/ streammonitor.py
+	@echo "Running isort (import sorter)..."
+	@uv run isort --check-only src/ tests/ streammonitor.py
+	@echo "Running mypy (type checker)..."
+	@uv run mypy src/ streammonitor.py
+	@echo "Strict linting completed successfully!"
+
+# Format the codebase
+format:
+	@echo "Formatting code..."
+	@echo "Running black (code formatter)..."
+	@uv run black src/ tests/ streammonitor.py
+	@echo "Running isort (import sorter)..."
+	@uv run isort src/ tests/ streammonitor.py
+	@echo "Code formatting completed!"
+
+# Fix linting issues automatically
+lint-fix:
+	@echo "Fixing linting issues..."
+	@echo "Running ruff (auto-fix)..."
+	@uv run ruff check --fix src/ tests/ streammonitor.py
+	@echo "Running black (format)..."
+	@uv run black src/ tests/ streammonitor.py
+	@echo "Running isort (sort imports)..."
+	@uv run isort src/ tests/ streammonitor.py
+	@echo "Linting fixes completed!"
 
 # Run Vimeo Monitor
 run:
