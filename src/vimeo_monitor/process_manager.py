@@ -70,6 +70,29 @@ class ProcessManager:
             self.process_logger.error(f"Failed to start image process: {e}")
             raise
     
+    def start_error_process(self, error_image_path: str) -> None:
+        """Start FFmpeg process for error image."""
+        if self.current_mode == "error":
+            self.process_logger.debug("Error process already running")
+            return
+        
+        self._stop_current_process()
+        
+        command = ["ffplay", "-fs", "-loop", "1", error_image_path]
+        self.process_logger.warning(f"Starting error process: {' '.join(command)}")
+        
+        try:
+            self.current_process = subprocess.Popen(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            self.current_mode = "error"
+            self.process_logger.warning("Error process started successfully")
+        except Exception as e:
+            self.process_logger.error(f"Failed to start error process: {e}")
+            raise
+    
     def _stop_current_process(self) -> None:
         """Stop current process if running."""
         if self.current_process and self.current_process.poll() is None:

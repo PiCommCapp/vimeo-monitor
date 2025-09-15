@@ -30,6 +30,7 @@ class Config:
         # Stream Configuration
         self.stream_selection: int = int(os.getenv('STREAM_SELECTION', '1'))
         self.static_image_path: Optional[str] = self._resolve_path(os.getenv('STATIC_IMAGE_PATH'))
+        self.error_image_path: Optional[str] = self._resolve_path(os.getenv('ERROR_IMAGE_PATH'))
         
         # Logging Configuration
         self.log_file: str = self._resolve_path(os.getenv('LOG_FILE', 'logs/stream_monitor.log'))
@@ -70,7 +71,8 @@ class Config:
             ('VIMEO_TOKEN', self.vimeo_token),
             ('VIMEO_KEY', self.vimeo_key),
             ('VIMEO_SECRET', self.vimeo_secret),
-            ('STATIC_IMAGE_PATH', self.static_image_path)
+            ('STATIC_IMAGE_PATH', self.static_image_path),
+            ('ERROR_IMAGE_PATH', self.error_image_path)
         ]
         
         for var_name, var_value in required_vars:
@@ -80,6 +82,9 @@ class Config:
         # Validate file paths
         if not os.path.exists(self.static_image_path):
             raise FileNotFoundError(f"Static image not found: {self.static_image_path}")
+        
+        if not os.path.exists(self.error_image_path):
+            raise FileNotFoundError(f"Error image not found: {self.error_image_path}")
         
         # Validate numeric values
         if self.check_interval < 1:

@@ -9,7 +9,7 @@ import time
 from typing import Tuple, Optional
 from enum import Enum
 from vimeo import VimeoClient
-from requests.exceptions import RequestException
+from requests.exceptions import RequestException, ConnectionError, Timeout
 
 from .config import Config
 from .logger import Logger, LoggingContext
@@ -33,6 +33,11 @@ class Monitor:
         self.monitor_logger = LoggingContext(logger, "MONITOR")
         self.process_manager = process_manager
         
+        # Error tracking
+        self.consecutive_errors = 0
+        self.last_successful_check = time.time()
+        self.error_threshold = 5  # Show error image after 5 consecutive failures
+        
         # Initialize Vimeo client
         try:
             self.api_client = VimeoClient(**config.get_vimeo_client_config())
@@ -46,7 +51,7 @@ class Monitor:
         self.monitor_logger.info(f"Monitoring stream {config.stream_selection} (ID: {self.stream_id})")
     
     def check_stream_status(self) -> Tuple[StreamStatus, Optional[str]]:
-        """Check if stream is live with retry logic."""
+        """Check if stream is live with comprehensive error handling and retry logic."""
         for attempt in range(self.config.max_retries):
             try:
                 stream_url = f"https://api.vimeo.com/me/live_events/{self.stream_id}/m3u8_playback"
@@ -54,6 +59,10 @@ class Monitor:
                 response_data = response.json()
                 
                 self.monitor_logger.debug(f"Vimeo API Response: {response_data}")
+                
+                # Reset error counter on successful API call
+                self.consecutive_errors = 0
+                self.last_successful_check = time.time()
                 
                 if "m3u8_playback_url" in response_data:
                     video_url = response_data["m3u8_playback_url"]
@@ -63,23 +72,48 @@ class Monitor:
                     self.monitor_logger.debug("No m3u8_playback_url found in response")
                     return StreamStatus.OFFLINE, None
                     
-            except RequestException as e:
-                self.monitor_logger.error(f"API request failed (attempt {attempt + 1}/{self.config.max_retries}): {e}")
+            except ConnectionError as e:
+                self.consecutive_errors += 1
+                self.monitor_logger.error(f"Connection error (attempt {attempt + 1}/{self.config.max_retries}): {e}")
                 if attempt < self.config.max_retries - 1:
                     wait_time = 2 ** attempt  # Exponential backoff
                     self.monitor_logger.debug(f"Retrying in {wait_time} seconds...")
                     time.sleep(wait_time)
                 else:
+                    self.monitor_logger.error("All connection retry attempts failed")
+                    return StreamStatus.ERROR, None
+                    
+            except Timeout as e:
+                self.consecutive_errors += 1
+                self.monitor_logger.error(f"Timeout error (attempt {attempt + 1}/{self.config.max_retries}): {e}")
+                if attempt < self.config.max_retries - 1:
+                    wait_time = 2 ** attempt
+                    self.monitor_logger.debug(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
+                    self.monitor_logger.error("All timeout retry attempts failed")
+                    return StreamStatus.ERROR, None
+                    
+            except RequestException as e:
+                self.consecutive_errors += 1
+                self.monitor_logger.error(f"API request failed (attempt {attempt + 1}/{self.config.max_retries}): {e}")
+                if attempt < self.config.max_retries - 1:
+                    wait_time = 2 ** attempt
+                    self.monitor_logger.debug(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                else:
                     self.monitor_logger.error("All API retry attempts failed")
                     return StreamStatus.ERROR, None
+                    
             except Exception as e:
+                self.consecutive_errors += 1
                 self.monitor_logger.error(f"Unexpected error during API request: {e}")
                 return StreamStatus.ERROR, None
         
         return StreamStatus.ERROR, None
     
     def update_display(self, status: StreamStatus, video_url: Optional[str] = None) -> None:
-        """Update display based on stream status."""
+        """Update display based on stream status with error image support."""
         try:
             if status == StreamStatus.LIVE and video_url:
                 self.monitor_logger.info(f"Stream active. URL: {video_url}")
@@ -88,11 +122,21 @@ class Monitor:
                 self.monitor_logger.warning("Stream not active. Displaying static image.")
                 self.process_manager.start_image_process(self.config.static_image_path)
             elif status == StreamStatus.ERROR:
-                self.monitor_logger.error("Stream status error. Maintaining current display.")
+                # Show error image if we have too many consecutive errors
+                if self.consecutive_errors >= self.error_threshold:
+                    self.monitor_logger.error(f"Too many consecutive errors ({self.consecutive_errors}). Displaying error image.")
+                    self.process_manager.start_error_process(self.config.error_image_path)
+                else:
+                    self.monitor_logger.warning(f"Stream error (consecutive: {self.consecutive_errors}). Maintaining current display.")
             else:
                 self.monitor_logger.error(f"Unknown stream status: {status}")
         except Exception as e:
             self.monitor_logger.error(f"Failed to update display: {e}")
+            # If display update fails, try to show error image
+            try:
+                self.process_manager.start_error_process(self.config.error_image_path)
+            except Exception as error_e:
+                self.monitor_logger.critical(f"Failed to show error image: {error_e}")
             raise
     
     def run_monitoring_cycle(self) -> None:
@@ -106,9 +150,21 @@ class Monitor:
     
     def get_status_info(self) -> dict:
         """Get current monitoring status information."""
+        current_time = time.time()
+        time_since_last_success = current_time - self.last_successful_check
+        
         return {
             "stream_id": self.stream_id,
             "stream_selection": self.config.stream_selection,
             "process_status": self.process_manager.get_process_status(),
-            "api_configured": bool(self.api_client)
+            "api_configured": bool(self.api_client),
+            "consecutive_errors": self.consecutive_errors,
+            "error_threshold": self.error_threshold,
+            "last_successful_check": self.last_successful_check,
+            "time_since_last_success": time_since_last_success,
+            "is_healthy": self.consecutive_errors < self.error_threshold
         }
+    
+    def is_healthy(self) -> bool:
+        """Check if the monitoring system is healthy."""
+        return self.consecutive_errors < self.error_threshold
