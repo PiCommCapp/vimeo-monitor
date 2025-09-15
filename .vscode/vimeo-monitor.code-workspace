@@ -1,0 +1,50 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"ruff.importStrategy": "fromEnvironment",
+		"ruff.showNotifications": "onError",
+		"todo-tree.general.tags": [
+			"TODO",
+			"FIXME",
+			"HACK",
+			"NOTE",
+			"BUG",
+			"TASK",
+			"REVIEW"
+		],
+		"todo-tree.highlights.customHighlight": {
+			"TODO": {
+				"icon": "check",
+				"type": "tag",
+				"foreground": "white",
+				"background": "red",
+				"iconColour": "blue"
+			},
+			"FIXME": {
+				"icon": "alert",
+				"type": "tag",
+				"foreground": "white",
+				"background": "orange",
+				"iconColour": "orange"
+			},
+			"HACK": {
+				"icon": "tools",
+				"type": "tag",
+				"foreground": "white",
+				"background": "purple",
+				"iconColour": "purple"
+			},
+			"NOTE": {
+				"icon": "note",
+				"type": "tag",
+				"foreground": "white",
+				"background": "blue",
+				"iconColour": "blue"
+			}
+		}
+	}
+}
