@@ -14,6 +14,16 @@
   - [x] Add troubleshooting section and support links
   - [x] Update project status to reflect current state
 
+### Phase 7: Documentation Deployment Fix (Week 6) - Separate Docs Workflow
+- [x] **Documentation Workflow Separation**
+  - [x] Create dedicated docs.yml workflow for GitHub Pages deployment
+  - [x] Remove documentation deployment from release.yml workflow
+  - [x] Fix GitHub Pages permission issues with proper workflow structure
+  - [x] Use official GitHub Pages deployment actions (actions/configure-pages, actions/deploy-pages)
+  - [x] Add path-based triggers for documentation changes
+  - [x] Include daily schedule for documentation updates
+  - [x] Test workflow locally and validate structure
+
 ### Phase 5: Documentation & CI/CD (Week 5) - Documentation & Automation ✅ ARCHIVED
 - [x] **Documentation Foundation**
   - [x] Restructure docs/ directory with proper hierarchy (3-page structure)
