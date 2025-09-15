@@ -24,6 +24,103 @@
   - [x] Include daily schedule for documentation updates
   - [x] Test workflow locally and validate structure
 
+### Phase 8: Prometheus Health Monitoring System (Week 7) - Comprehensive Health Monitoring
+
+**🎨 ARCHITECTURE DECISION COMPLETED:**
+- **Chosen Architecture:** Hybrid Approach with Health Module Integration
+- **Design Pattern:** Optional HealthModule integrated into existing VimeoMonitorApp
+- **Web Framework:** FastAPI (as requested)
+- **Integration Strategy:** Minimal disruption, easily severable
+- **Default State:** Disabled (opt-in via configuration)
+
+**📋 IMPLEMENTATION PLAN:**
+
+- [ ] **Foundation Setup** (Priority: High)
+  - [ ] Add health monitoring dependencies to pyproject.toml with optional extras
+    - `fastapi>=0.104.0`, `uvicorn[standard]>=0.24.0`, `psutil>=5.9.0`
+    - `prometheus-client>=0.19.0`, `speedtest-cli>=2.1.3`
+  - [ ] Create `src/vimeo_monitor/health_module.py` (main coordinator)
+  - [ ] Create `src/vimeo_monitor/health/metrics_collector.py` (Prometheus format)
+  - [ ] Add health monitoring configuration to config.py (12 new env variables)
+  - [ ] Add FFmpeg dependency check to installation script
+
+- [ ] **Health Collectors Implementation** (Priority: High)
+  - [ ] Create `src/vimeo_monitor/health/script_monitor.py` (integrates with existing Monitor)
+  - [ ] Create `src/vimeo_monitor/health/system_monitor.py` (psutil: CPU, memory, temperature, disk)
+  - [ ] Create `src/vimeo_monitor/health/network_monitor.py` (ping, speedtest, connectivity)
+  - [ ] Create `src/vimeo_monitor/health/stream_monitor.py` (FFprobe integration with timeout)
+
+- [ ] **System Integration** (Priority: Medium)
+  - [ ] Integrate HealthModule into VimeoMonitorApp (optional initialization)
+  - [ ] Add FastAPI server thread management with graceful shutdown
+  - [ ] Implement configuration validation for health monitoring
+  - [ ] Add comprehensive logging for health system
+
+- [ ] **Testing & Documentation** (Priority: Medium)
+  - [ ] Create comprehensive test suite for all health components
+  - [ ] Add health monitoring configuration documentation
+  - [ ] Create Prometheus metrics reference guide
+  - [ ] Update installation documentation with health monitoring setup
+  - [ ] Add troubleshooting guide for metrics endpoint
+
+**🔧 TECHNICAL SPECIFICATIONS:**
+
+**Configuration Schema (12 new environment variables):**
+```env
+# Health Monitoring (Default: Disabled)
+HEALTH_MONITORING_ENABLED=false
+HEALTH_METRICS_PORT=8080
+HEALTH_METRICS_HOST=0.0.0.0
+
+# Monitoring Intervals
+HEALTH_HARDWARE_INTERVAL=10
+HEALTH_NETWORK_INTERVAL=30
+HEALTH_STREAM_INTERVAL=60
+
+# Network Monitoring
+HEALTH_NETWORK_ENABLED=true
+HEALTH_NETWORK_PING_HOSTS=8.8.8.8,1.1.1.1,vimeo.com
+HEALTH_NETWORK_SPEEDTEST_ENABLED=true
+HEALTH_NETWORK_SPEEDTEST_INTERVAL=300
+
+# Stream & Hardware Monitoring
+HEALTH_STREAM_ENABLED=true
+HEALTH_STREAM_FFPROBE_TIMEOUT=15
+HEALTH_HARDWARE_ENABLED=true
+```
+
+**Prometheus Metrics (16 core metrics):**
+- Script Health: `vimeo_monitor_script_health`, `vimeo_monitor_api_requests_total`, `vimeo_monitor_stream_uptime_seconds`
+- Hardware: `vimeo_monitor_cpu_usage_percent`, `vimeo_monitor_memory_usage_percent`, `vimeo_monitor_temperature_celsius`
+- Network: `vimeo_monitor_network_connectivity`, `vimeo_monitor_network_latency_ms`, `vimeo_monitor_network_speed_mbps`
+- Stream: `vimeo_monitor_stream_availability`, `vimeo_monitor_stream_bitrate_kbps`, `vimeo_monitor_stream_resolution`
+
+**File Structure:**
+```
+src/vimeo_monitor/
+├── health_module.py              # Main coordinator
+├── health/
+│   ├── __init__.py
+│   ├── metrics_collector.py      # Prometheus format aggregator
+│   ├── script_monitor.py         # Script health (existing Monitor integration)
+│   ├── system_monitor.py         # Hardware metrics (psutil)
+│   ├── network_monitor.py        # Network connectivity & speed
+│   └── stream_monitor.py         # FFprobe stream analysis
+```
+
+**Integration Points:**
+- Minimal changes to `streammonitor.py` (optional HealthModule initialization)
+- Extends existing `config.py` with health monitoring configuration
+- Integrates with existing `Monitor` and `ProcessManager` classes
+- Uses existing logging patterns and error handling
+
+**Resource Management:**
+- FastAPI server runs in separate thread
+- Collectors use different intervals (10s/30s/60s) to manage load
+- FFprobe with 15-second timeout to prevent hanging
+- Optional speedtest limited to 5-minute intervals
+- Designed for Raspberry Pi resource constraints
+
 ### Phase 5: Documentation & CI/CD (Week 5) - Documentation & Automation ✅ ARCHIVED
 - [x] **Documentation Foundation**
   - [x] Restructure docs/ directory with proper hierarchy (3-page structure)
