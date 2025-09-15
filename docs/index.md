@@ -1,21 +1,38 @@
-# Vibe Dev Template
+# Vimeo Monitor
 
-Welcome to the Vibe Dev Template documentation.
+A system that monitors Vimeo live streams and displays them full-screen on a Raspberry Pi.
 
-This is a simple development template with basic documentation structure.
+## What It Does
 
-## Getting Started
+- Connects to Vimeo API to check if your stream is live
+- Shows a holding image when stream is offline
+- Displays full-screen video when stream is live
+- Automatically switches between modes as needed
+- Restarts automatically if something goes wrong
 
-This template provides a foundation for development projects with:
+## Requirements
 
-- Basic project structure
-- Documentation setup
-- Development guidelines
+- Raspberry Pi (or Linux computer)
+- Python 3.12 or newer
+- VLC media player
+- FFmpeg
+- Vimeo API credentials
 
-## Documentation
+## Quick Start
 
-More documentation will be added here as the project evolves.
+1. [Install the system](installation.md)
+2. [Configure your Vimeo credentials](installation.md#3-configuration)
+3. Run the monitor
+4. [Troubleshoot any issues](troubleshooting.md)
 
-## Contributing
+## Getting Help
 
-Feel free to contribute to this template by submitting issues or pull requests.
+- **Installation problems?** → [Installation Guide](installation.md)
+- **Something not working?** → [Troubleshooting Guide](troubleshooting.md)
+- **Need to understand what it does?** → You're reading it!
+
+## Files You Need
+
+- `.env` file with your Vimeo API credentials
+- `media/holding.png` - image shown when stream is offline
+- `media/failure.png` - image shown when there's an error

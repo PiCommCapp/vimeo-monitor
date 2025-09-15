@@ -99,23 +99,35 @@ lint-strict:
 
 # Format the codebase
 format:
-	@echo "Formatting code..."
-	@echo "Running black (code formatter)..."
+	@echo "Auto-formatting code..."
 	@uv run black src/ tests/ streammonitor.py
-	@echo "Running isort (import sorter)..."
 	@uv run isort src/ tests/ streammonitor.py
 	@echo "Code formatting completed!"
 
-# Fix linting issues automatically
+# Auto-fix linting issues
 lint-fix:
-	@echo "Fixing linting issues..."
-	@echo "Running ruff (auto-fix)..."
+	@echo "Auto-fixing linting issues..."
 	@uv run ruff check --fix src/ tests/ streammonitor.py
-	@echo "Running black (format)..."
 	@uv run black src/ tests/ streammonitor.py
-	@echo "Running isort (sort imports)..."
 	@uv run isort src/ tests/ streammonitor.py
 	@echo "Linting fixes completed!"
+
+# CI/CD validation (same as GitHub Actions)
+ci-validate:
+	@echo "Running CI/CD validation..."
+	@echo "Running linting (ruff)..."
+	@uv run ruff check .
+	@echo "Running formatting check (black)..."
+	@uv run black --check .
+	@echo "Running import sorting check (isort)..."
+	@uv run isort --check-only .
+	@echo "Running type checking (mypy)..."
+	@uv run mypy src/
+	@echo "Running tests..."
+	@uv run pytest tests/ -v --cov=src --cov-report=xml
+	@echo "CI/CD validation completed successfully!"
+
+# Build documentation
 
 # Run Vimeo Monitor
 run:
