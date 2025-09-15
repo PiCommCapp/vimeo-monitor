@@ -84,29 +84,10 @@ while keep_looping:
                 video_url = response_data["m3u8_playback_url"]
                 logging.info("Stream active. URL: %s", video_url)
                 ffplay_command = [
-#                    "ffplay",
-#                    "-fs",
-#                    "-framedrop",
-#                    "-x", "854",
-#                    "-y", "480",
-#                    "-max_delay", "10000000",
-#                    "-rtbufsize", "50M",
-#                    "-volume", "100",
-#                    "-probesize", "32",
-#                    "-analyzeduration", "0",
-#                    "-fflags", "nobuffer",
-#                    "-flags", "low_delay",
-#                    "-strict", "experimental",
-#                    "-tune", "zerolatency",
-#                    "-preset", "ultrafast",
-#                    "-vst", "2",
-#                    "-ast", "1",
-#                    video_url
-#                ]
-		     "cvlc",
-		     "-f",
-		     video_url
-		 ]
+                    "cvlc",
+                    "-f",
+                    video_url
+                    ]
                 logging.info("Executing ffplay command for stream: %s", " ".join(ffplay_command))
                 current_process = subprocess.Popen(ffplay_command)
             else:

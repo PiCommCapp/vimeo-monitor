@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Vimeo Stream Monitor
+Comment=Launch Vimeo Stream Monitor at startup
+Exec=/bin/bash -c 'uv run /home/admin/code/vimeo-monitor/streamreturn.py'
+Terminal=false
+Hidden=false
