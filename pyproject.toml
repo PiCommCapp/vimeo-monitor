@@ -1,25 +1,24 @@
 [project]
 name = "vimeo-monitor"
 version = "0.0.2"
-description = "Lint your n8n JSON here."
-readme = "README.md"
+description = "A Python application for monitoring Vimeo live streams and displaying them using VLC/FFmpeg"
 authors = [
-  {name = "Dom Capparelli", email = "web@Capparelli.ie"}
+  {name = "Vimeo Monitor Team", email = "admin@example.com"},
 ]
-maintainers = [
-  {name = "Dom Capparelli", email = "web@Capparelli.ie"}
-]
+readme = "README.md"
+requires-python = ">=3.12"
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Multimedia :: Video",
+  "Topic :: Software Development :: Libraries :: Python Modules",
   "Topic :: Software Development :: Vimeo",
   "Topic :: Software Development :: Monitoring",
 ]
-license = "MIT"
+license = {text = "MIT"}
 
 dependencies = [
   "pyvimeo>=1.1.2",
@@ -41,90 +40,100 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[tool.setuptools.package-data]
-vimeo_monitor = ["*.py"]
-
-[dependency-groups]
-dev = [
-    "pytest>=8.3.5",
-    "pre-commit>=4.2.0",
-
-    "pytest-cov>=6.1.1",
-    "ruff>=0.11.11",
-    "mkdocs>=1.6.1",
-    "mkdocs-material>=9.6.14",
-    "mkdocstrings[python]>=0.29.1",
-    "pyinstaller>=6.13.0",
-]
-
-test = [
-    "coverage",  # testing
-    "pytest",  # testing
-    "ruff",  # linting
-    "mypy", # checking types
-    "ipdb", # debugging
-]
-
-security = [
-    "safety>=3.0.0",  # security vulnerability scanner
-    "bandit>=1.7.0",  # security linter
-]
-
-[project.urls]
-bugs = "https://github.com/PiCommCapp/vimeo-monitor/issues"
-changelog = "https://github.com/PiCommCapp/vimeo-monitor/blob/master/changelog.md"
-homepage = "https://github.com/PiCommCapp/vimeo-monitor"
-
-[tool.ruff]
-target-version = "py312"
-line-length = 120
-fix = true
-
-[tool.ruff.lint]
-select = [
-    # flake8-2020
-    "YTT",
-    # flake8-bandit
-    "S",
-    # flake8-bugbear
-    "B",
-    # flake8-builtins
-    "A",
-    # flake8-comprehensions
-    "C4",
-    # flake8-debugger
-    "T10",
-    # flake8-simplify
-    "SIM",
-    # isort
-    "I",
-    # mccabe
-    "C90",
-    # pycodestyle
-    "E", "W",
-    # pyflakes
-    "F",
-    # pygrep-hooks
-    "PGH",
-    # pyupgrade
-    "UP",
-    # ruff
-    "RUF",
-    # tryceratops
-    "TRY",
-]
-ignore = [
-    # LineTooLong
-    "E501",
-    # DoNotAssignLambda
-    "E731",
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S101"]
-
-[tool.ruff.format]
-preview = true
+[tool.setuptools]
+py-modules = ["streammonitor"]
 
 [tool.uv]
 package = true
+
+# Ruff configuration
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+# Black configuration
+[tool.black]
+line-length = 88
+target-version = ['py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+# isort configuration
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["vimeo_monitor"]
+known_third_party = ["vimeo", "dotenv", "pytest"]
+
+# MyPy configuration
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "vimeo.*",
+    "dotenv.*",
+]
+ignore_missing_imports = true
+
+# Pytest configuration
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-markers",
+    "--strict-config",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]

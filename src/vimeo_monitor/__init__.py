@@ -12,10 +12,4 @@ __email__ = "web@Capparelli.ie"
 from .config import Config, config
 from .logger import Logger, LoggingContext, get_logger
 
-__all__ = [
-    "Config",
-    "config", 
-    "Logger",
-    "LoggingContext",
-    "get_logger"
-]
+__all__ = ["Config", "config", "Logger", "LoggingContext", "get_logger"]
