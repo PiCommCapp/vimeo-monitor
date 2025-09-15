@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 class Config:
     """Configuration class for Vimeo Monitor."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize configuration by loading environment variables."""
         # Load environment variables from .env file
         load_dotenv()
@@ -37,7 +37,7 @@ class Config:
         )
 
         # Logging Configuration
-        self.log_file: str = self._resolve_path(
+        self.log_file: str | None = self._resolve_path(
             os.getenv("LOG_FILE", "logs/stream_monitor.log")
         )
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO")
@@ -86,10 +86,10 @@ class Config:
                 raise ValueError(f"Required environment variable {var_name} not set")
 
         # Validate file paths
-        if not os.path.exists(self.static_image_path):
+        if self.static_image_path and not os.path.exists(self.static_image_path):
             raise FileNotFoundError(f"Static image not found: {self.static_image_path}")
 
-        if not os.path.exists(self.error_image_path):
+        if self.error_image_path and not os.path.exists(self.error_image_path):
             raise FileNotFoundError(f"Error image not found: {self.error_image_path}")
 
         # Validate numeric values

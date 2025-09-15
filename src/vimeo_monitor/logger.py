@@ -29,16 +29,21 @@ class Logger:
         logger.handlers.clear()
 
         # Create log directory if it doesn't exist
-        log_dir = os.path.dirname(self.config.log_file)
-        if log_dir and not os.path.exists(log_dir):
-            os.makedirs(log_dir, exist_ok=True)
+        if self.config.log_file:
+            log_dir = os.path.dirname(self.config.log_file)
+            if log_dir and not os.path.exists(log_dir):
+                os.makedirs(log_dir, exist_ok=True)
 
-        # File handler with rotation
-        file_handler = RotatingFileHandler(
-            self.config.log_file,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=self.config.log_rotation_days,
-        )
+            # File handler with rotation
+            file_handler = RotatingFileHandler(
+                self.config.log_file,
+                maxBytes=10 * 1024 * 1024,  # 10MB
+                backupCount=self.config.log_rotation_days,
+            )
+            logger.addHandler(file_handler)
+        else:
+            # No log file configured, only console logging
+            pass
 
         # Console handler
         console_handler = logging.StreamHandler()
@@ -48,31 +53,28 @@ class Logger:
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
 
-        file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
         logger.addHandler(console_handler)
 
         return logger
 
-    def info(self, message: str, **kwargs) -> None:
+    def info(self, message: str, **kwargs: str) -> None:
         """Log info message."""
         self.logger.info(message, extra=kwargs)
 
-    def error(self, message: str, **kwargs) -> None:
+    def error(self, message: str, **kwargs: str) -> None:
         """Log error message."""
         self.logger.error(message, extra=kwargs)
 
-    def warning(self, message: str, **kwargs) -> None:
+    def warning(self, message: str, **kwargs: str) -> None:
         """Log warning message."""
         self.logger.warning(message, extra=kwargs)
 
-    def debug(self, message: str, **kwargs) -> None:
+    def debug(self, message: str, **kwargs: str) -> None:
         """Log debug message."""
         self.logger.debug(message, extra=kwargs)
 
-    def critical(self, message: str, **kwargs) -> None:
+    def critical(self, message: str, **kwargs: str) -> None:
         """Log critical message."""
         self.logger.critical(message, extra=kwargs)
 

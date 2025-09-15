@@ -137,16 +137,20 @@ class Monitor:
                 self.monitor_logger.warning(
                     "Stream not active. Displaying static image."
                 )
-                self.process_manager.start_image_process(self.config.static_image_path)
+                if self.config.static_image_path:
+                    self.process_manager.start_image_process(
+                        self.config.static_image_path
+                    )
             elif status == StreamStatus.ERROR:
                 # Show error image if we have too many consecutive errors
                 if self.consecutive_errors >= self.error_threshold:
                     self.monitor_logger.error(
                         f"Too many consecutive errors ({self.consecutive_errors}). Displaying error image."
                     )
-                    self.process_manager.start_error_process(
-                        self.config.error_image_path
-                    )
+                    if self.config.error_image_path:
+                        self.process_manager.start_error_process(
+                            self.config.error_image_path
+                        )
                 else:
                     self.monitor_logger.warning(
                         f"Stream error (consecutive: {self.consecutive_errors}). Maintaining current display."
@@ -157,7 +161,10 @@ class Monitor:
             self.monitor_logger.error(f"Failed to update display: {e}")
             # If display update fails, try to show error image
             try:
-                self.process_manager.start_error_process(self.config.error_image_path)
+                if self.config.error_image_path:
+                    self.process_manager.start_error_process(
+                        self.config.error_image_path
+                    )
             except Exception as error_e:
                 self.monitor_logger.critical(f"Failed to show error image: {error_e}")
             raise
@@ -172,9 +179,10 @@ class Monitor:
                     self.monitor_logger.error(
                         "Process restart failed - showing error image"
                     )
-                    self.process_manager.start_error_process(
-                        self.config.error_image_path
-                    )
+                    if self.config.error_image_path:
+                        self.process_manager.start_error_process(
+                            self.config.error_image_path
+                        )
                     return
 
             status, video_url = self.check_stream_status()
@@ -212,7 +220,7 @@ class Monitor:
             and self.last_stream_url
         ):
 
-            self.monitor_logger.info(
+            self.monitor_logger.info(  # type: ignore[unreachable]
                 f"Restarting stream process with URL: {self.last_stream_url}"
             )
             try:

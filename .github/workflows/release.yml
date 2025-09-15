@@ -29,7 +29,7 @@ jobs:
         version: "latest"
 
     - name: Cache uv dependencies
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/.cache/uv
         key: ${{ runner.os }}-uv-${{ hashFiles('**/uv.lock') }}
@@ -46,7 +46,7 @@ jobs:
 
     - name: Upload coverage reports
       if: matrix.python-version == '3.12'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: coverage-report
         path: htmlcov/
@@ -114,11 +114,8 @@ jobs:
         uv build
 
     - name: Upload release artifacts
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/upload-artifact@v4
       with:
-        upload_url: ${{ github.event.upload_url }}
-        asset_path: ./dist/
-        asset_name: vimeo-monitor-${{ github.event.release.tag_name }}
-        asset_content_type: application/zip
+        name: vimeo-monitor-${{ github.event.release.tag_name }}
+        path: ./dist/
+        retention-days: 30

@@ -28,7 +28,7 @@ class ProcessManager:
         self.restart_count = 0
         self.max_restarts = 5  # Maximum number of consecutive restarts
         self.restart_delay = 5  # Seconds to wait before restart
-        self.last_restart_time = 0
+        self.last_restart_time: float = 0.0
 
     def start_stream_process(self, video_url: str) -> None:
         """Start VLC process for live stream."""
@@ -167,9 +167,11 @@ class ProcessManager:
                         "Stream restart requested - monitor will handle restart with video URL"
                     )
                 elif self.current_mode == "image":
-                    self.start_image_process(self.config.static_image_path)
+                    if self.config.static_image_path:
+                        self.start_image_process(self.config.static_image_path)
                 elif self.current_mode == "error":
-                    self.start_error_process(self.config.error_image_path)
+                    if self.config.error_image_path:
+                        self.start_error_process(self.config.error_image_path)
 
                 self.process_logger.info(
                     f"Process restarted successfully in {self.current_mode} mode"
