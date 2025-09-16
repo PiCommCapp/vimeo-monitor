@@ -181,10 +181,12 @@ clean:
 # Installation targets
 install:
 	@echo "Running installation script..."
+	@chmod +x scripts/install.sh
 	@./scripts/install.sh
 
 uninstall:
 	@echo "Running uninstallation script..."
+	@chmod +x scripts/uninstall.sh
 	@./scripts/uninstall.sh
 
 # Development workflow - setup and serve

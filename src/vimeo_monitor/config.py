@@ -7,6 +7,7 @@ This module handles loading and validating configuration from environment variab
 
 import os
 from pathlib import Path
+from typing import List
 
 from dotenv import load_dotenv
 
@@ -56,6 +57,47 @@ class Config:
             5: "4797202",
             6: "4797207",
         }
+        
+        # Health Monitoring Configuration
+        self.health_monitoring_enabled: bool = self._get_bool("HEALTH_MONITORING_ENABLED", False)
+        
+        # Only load health monitoring config if enabled
+        if self.health_monitoring_enabled:
+            # Core health monitoring settings
+            self.health_metrics_port: int = int(os.getenv("HEALTH_METRICS_PORT", "8080"))
+            self.health_metrics_host: str = os.getenv("HEALTH_METRICS_HOST", "0.0.0.0")
+            
+            # Monitoring intervals
+            self.health_hardware_interval: int = int(os.getenv("HEALTH_HARDWARE_INTERVAL", "10"))
+            self.health_network_interval: int = int(os.getenv("HEALTH_NETWORK_INTERVAL", "30"))
+            self.health_stream_interval: int = int(os.getenv("HEALTH_STREAM_INTERVAL", "60"))
+            
+            # Feature toggles
+            self.health_hardware_enabled: bool = self._get_bool("HEALTH_HARDWARE_ENABLED", True)
+            self.health_network_enabled: bool = self._get_bool("HEALTH_NETWORK_ENABLED", True)
+            self.health_stream_enabled: bool = self._get_bool("HEALTH_STREAM_ENABLED", True)
+            
+            # Network monitoring configuration
+            ping_hosts = os.getenv("HEALTH_NETWORK_PING_HOSTS", "8.8.8.8,1.1.1.1,vimeo.com")
+            self.health_network_ping_hosts: List[str] = [h.strip() for h in ping_hosts.split(",")]
+            self.health_network_speedtest_enabled: bool = self._get_bool("HEALTH_NETWORK_SPEEDTEST_ENABLED", True)
+            self.health_network_speedtest_interval: int = int(os.getenv("HEALTH_NETWORK_SPEEDTEST_INTERVAL", "300"))
+            
+            # Stream monitoring configuration
+            self.health_stream_ffprobe_timeout: int = int(os.getenv("HEALTH_STREAM_FFPROBE_TIMEOUT", "15"))
+
+    def _get_bool(self, env_var: str, default: bool = False) -> bool:
+        """Convert environment variable to boolean.
+        
+        Args:
+            env_var: Environment variable name
+            default: Default value if not set
+            
+        Returns:
+            Boolean value of environment variable
+        """
+        value = os.getenv(env_var, str(default)).lower()
+        return value in ("true", "1", "yes", "on", "t")
 
     def _resolve_path(self, path: str | None) -> str | None:
         """Resolve relative paths relative to project root."""
@@ -106,6 +148,26 @@ class Config:
 
         if self.max_retries < 1:
             raise ValueError("Max retries must be at least 1")
+            
+        # Validate health monitoring configuration if enabled
+        if self.health_monitoring_enabled:
+            if not (1024 <= self.health_metrics_port <= 65535):
+                raise ValueError("Health metrics port must be between 1024 and 65535")
+            
+            if self.health_hardware_interval < 1:
+                raise ValueError("Health hardware interval must be at least 1 second")
+                
+            if self.health_network_interval < 1:
+                raise ValueError("Health network interval must be at least 1 second")
+                
+            if self.health_stream_interval < 1:
+                raise ValueError("Health stream interval must be at least 1 second")
+                
+            if self.health_network_speedtest_interval < 60:
+                raise ValueError("Health network speedtest interval must be at least 60 seconds")
+                
+            if self.health_stream_ffprobe_timeout < 1:
+                raise ValueError("Health stream FFprobe timeout must be at least 1 second")
 
     def get_stream_id(self) -> str:
         """Get the stream ID for the selected stream."""

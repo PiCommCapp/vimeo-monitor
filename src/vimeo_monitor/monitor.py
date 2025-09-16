@@ -7,6 +7,7 @@ This module handles Vimeo API monitoring and stream status detection.
 
 import time
 from enum import Enum
+from typing import Optional
 
 from requests.exceptions import ConnectionError, RequestException, Timeout
 from vimeo import VimeoClient
@@ -231,3 +232,11 @@ class Monitor:
                 return False
 
         return True
+    
+    def get_stream_url(self) -> Optional[str]:
+        """Get the current stream URL.
+        
+        Returns:
+            Current stream URL or None if not available
+        """
+        return self.last_stream_url

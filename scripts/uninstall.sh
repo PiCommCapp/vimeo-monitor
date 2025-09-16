@@ -92,7 +92,12 @@ remove_system_dependencies() {
     echo -n "Remove system dependencies (VLC, FFmpeg, etc.)? (y/N): "
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
-        sudo apt remove -y vlc ffmpeg
+        # Remove packages
+        sudo apt remove -y vlc ffmpeg python3-dev build-essential
+        
+        # Clean up any remaining packages
+        sudo apt autoremove -y
+        
         log_success "System dependencies removed"
     else
         log_info "System dependencies kept"
@@ -113,6 +118,9 @@ remove_uv() {
         # Remove from PATH in .bashrc
         sed -i '/export PATH="\$HOME\/.cargo\/bin:\$PATH"/d' ~/.bashrc
         
+        # Remove any remaining uv cache
+        rm -rf ~/.cache/uv
+        
         log_success "UV package manager removed"
     else
         log_info "UV package manager kept"
@@ -125,6 +133,11 @@ cleanup_logs() {
     # Remove log files from system directories
     sudo rm -f /var/log/vimeo-monitor.log
     sudo rm -f /var/log/stream_monitor.log
+    
+    # Remove log files from project directory
+    if [[ -d "$PROJECT_DIR/logs" ]]; then
+        rm -f "$PROJECT_DIR/logs"/*.log*
+    fi
     
     log_success "Log files cleaned up"
 }
@@ -139,6 +152,9 @@ show_completion() {
     echo "- System dependencies (if confirmed)"
     echo "- UV package manager (if confirmed)"
     echo "- Log files"
+    echo
+    echo "Note: Health monitoring dependencies (FastAPI, psutil, etc.)"
+    echo "      are managed by UV and will be removed with UV if selected."
     echo
     log_success "Vimeo Monitor uninstallation completed successfully!"
 }

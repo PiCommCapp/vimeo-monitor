@@ -23,6 +23,7 @@ class VimeoMonitorApp:
         self.app_logger = LoggingContext(self.logger, "APP")
         self.process_manager: ProcessManager | None = None
         self.monitor: Monitor | None = None
+        self.health_module = None  # Health monitoring module
         self.running = False
 
         # System tracking
@@ -42,6 +43,26 @@ class VimeoMonitorApp:
             # Initialize monitor
             self.monitor = Monitor(config, self.logger, self.process_manager)
             self.app_logger.info("Monitor initialized")
+            
+            # Initialize health monitoring (optional)
+            if getattr(config, "health_monitoring_enabled", False):
+                try:
+                    from vimeo_monitor.health_module import HealthModule
+                    self.health_module = HealthModule(
+                        config=config,
+                        logger=self.logger,
+                        monitor=self.monitor,
+                        process_manager=self.process_manager
+                    )
+                    self.app_logger.info("Health monitoring initialized")
+                except ImportError as e:
+                    self.app_logger.error(
+                        f"Health monitoring dependencies not installed: {e}. "
+                        "Install with: pip install vimeo-monitor[health]"
+                    )
+                    self.health_module = None
+            else:
+                self.app_logger.debug("Health monitoring disabled")
 
             return True
 
@@ -69,6 +90,16 @@ class VimeoMonitorApp:
         self.setup_signal_handlers()
         self.running = True
         self.app_logger.info("Starting Vimeo Monitor")
+        
+        # Start health monitoring if enabled
+        if self.health_module:
+            try:
+                self.health_module.start()
+                self.app_logger.info(
+                    f"Health monitoring started on http://{config.health_metrics_host}:{config.health_metrics_port}/metrics"
+                )
+            except Exception as e:
+                self.app_logger.error(f"Failed to start health monitoring: {e}")
 
         try:
             while self.running:
@@ -105,12 +136,24 @@ class VimeoMonitorApp:
             monitor_status = self.monitor.get_status_info()
             process_status = self.process_manager.get_process_status()
 
-            return {
+            status = {
                 "uptime": uptime,
                 "monitor_status": monitor_status,
                 "process_status": process_status,
                 "running": self.running,
             }
+            
+            # Add health monitoring status if enabled
+            if self.health_module:
+                status["health_monitoring"] = {
+                    "enabled": True,
+                    "running": getattr(self.health_module, "running", False),
+                    "metrics_url": f"http://{config.health_metrics_host}:{config.health_metrics_port}/metrics"
+                }
+            else:
+                status["health_monitoring"] = {"enabled": False}
+
+            return status
         except Exception as e:
             self.app_logger.error(f"Failed to get system status: {e}")
             return {"error": str(e)}
@@ -119,6 +162,14 @@ class VimeoMonitorApp:
         """Graceful shutdown of all components."""
         self.app_logger.info("Shutting down Vimeo Monitor")
         self.running = False
+        
+        # Shutdown health monitoring
+        if self.health_module:
+            try:
+                self.health_module.shutdown()
+                self.app_logger.info("Health monitoring stopped")
+            except Exception as e:
+                self.app_logger.error(f"Error shutting down health monitoring: {e}")
 
         if self.process_manager:
             self.process_manager.cleanup()

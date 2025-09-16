@@ -74,7 +74,25 @@ install_dependencies() {
         ffmpeg \
         curl \
         git \
-        make
+        make \
+        python3-dev \
+        build-essential
+    
+    # Verify FFmpeg installation for health monitoring
+    if command -v ffprobe &> /dev/null; then
+        log_success "FFmpeg/FFprobe installed successfully (required for health monitoring)"
+    else
+        log_error "FFmpeg/FFprobe installation failed (required for health monitoring)"
+        exit 1
+    fi
+    
+    # Verify VLC installation
+    if command -v vlc &> /dev/null; then
+        log_success "VLC installed successfully"
+    else
+        log_error "VLC installation failed"
+        exit 1
+    fi
     
     log_success "System dependencies installed"
 }
@@ -135,6 +153,23 @@ install_python_dependencies() {
     export PATH="$HOME/.cargo/bin:$PATH"
     uv sync
     
+    # Ask if health monitoring should be installed
+    read -p "Do you want to install health monitoring dependencies? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        log_info "Installing health monitoring dependencies..."
+        uv sync --extra health
+        
+        # Verify health monitoring dependencies
+        if uv run python3 -c "import fastapi, uvicorn, psutil, prometheus_client, speedtest, requests" 2>/dev/null; then
+            log_success "Health monitoring dependencies installed and verified"
+        else
+            log_warning "Health monitoring dependencies installed but verification failed"
+        fi
+    else
+        log_info "Skipping health monitoring dependencies"
+    fi
+    
     log_success "Python dependencies installed"
 }
 
@@ -155,6 +190,19 @@ setup_environment() {
         fi
     else
         log_info ".env file already exists"
+    fi
+    
+    # Ask if health monitoring should be enabled
+    read -p "Do you want to enable health monitoring? (y/N): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if grep -q "HEALTH_MONITORING_ENABLED=true" .env; then
+            log_info "Health monitoring is already enabled in .env"
+        else
+            # Update health monitoring configuration in .env
+            sed -i 's/HEALTH_MONITORING_ENABLED=false/HEALTH_MONITORING_ENABLED=true/' .env
+            log_success "Health monitoring enabled in .env"
+        fi
     fi
     
     # Set proper permissions for .env
@@ -190,11 +238,31 @@ test_installation() {
         log_warning "Configuration test failed - please check your .env file"
     fi
     
+    # Test health monitoring imports if enabled
+    if grep -q "HEALTH_MONITORING_ENABLED=true" .env; then
+        log_info "Testing health monitoring imports..."
+        if uv run python3 -c "try: from vimeo_monitor.health_module import HealthModule; print('Health monitoring imports valid'); except ImportError as e: print(f'Health monitoring imports failed: {e}'); exit(1)"; then
+            log_success "Health monitoring imports test passed"
+        else
+            log_warning "Health monitoring imports test failed - please check your installation"
+        fi
+    fi
+    
     # Test basic functionality
     if make test; then
         log_success "Basic functionality test passed"
     else
         log_warning "Basic functionality test failed - check logs for details"
+    fi
+    
+    # Test health monitoring functionality if enabled
+    if grep -q "HEALTH_MONITORING_ENABLED=true" .env; then
+        log_info "Testing health monitoring functionality..."
+        if uv run python3 -c "try: from vimeo_monitor.health_module import HealthModule; from vimeo_monitor import config, get_logger; hm = HealthModule(config, get_logger(config)); print('Health monitoring functionality test passed'); except Exception as e: print(f'Health monitoring functionality test failed: {e}'); exit(1)"; then
+            log_success "Health monitoring functionality test passed"
+        else
+            log_warning "Health monitoring functionality test failed - please check your installation"
+        fi
     fi
     
     log_success "Installation testing completed"
@@ -213,14 +281,42 @@ show_next_steps() {
     echo "3. Run the application:"
     echo "   make run"
     echo
-    echo "4. Check autostart status:"
-    echo "   ls -la ~/.config/autostart/"
-    echo
-    echo "5. View logs:"
-    echo "   tail -f $PROJECT_DIR/logs/stream_monitor.log"
-    echo
-    echo "6. For troubleshooting, see:"
+    # Show health monitoring info if enabled
+    if grep -q "HEALTH_MONITORING_ENABLED=true" .env; then
+        HEALTH_PORT=$(grep "HEALTH_METRICS_PORT" .env | cut -d= -f2)
+        HEALTH_HOST=$(grep "HEALTH_METRICS_HOST" .env | cut -d= -f2)
+        if [[ -z "$HEALTH_PORT" ]]; then HEALTH_PORT=8080; fi
+        if [[ -z "$HEALTH_HOST" ]]; then HEALTH_HOST="0.0.0.0"; fi
+        echo "4. Access health metrics:"
+        echo "   http://<your-ip>:$HEALTH_PORT/metrics"
+        echo
+        echo "5. Configure Prometheus to scrape metrics:"
+        echo "   - Add this to prometheus.yml:"
+        echo "     scrape_configs:"
+        echo "       - job_name: 'vimeo_monitor'"
+        echo "         scrape_interval: 15s"
+        echo "         static_configs:"
+        echo "           - targets: ['<your-ip>:$HEALTH_PORT']"
+        echo
+        echo "6. Check autostart status:"
+        echo "   ls -la ~/.config/autostart/"
+        echo
+        echo "7. View logs:"
+        echo "   tail -f $PROJECT_DIR/logs/stream_monitor.log"
+        echo
+    else
+        echo "4. Check autostart status:"
+        echo "   ls -la ~/.config/autostart/"
+        echo
+        echo "5. View logs:"
+        echo "   tail -f $PROJECT_DIR/logs/stream_monitor.log"
+        echo
+    fi
+    echo "For troubleshooting, see:"
     echo "   $PROJECT_DIR/docs/troubleshooting.md"
+    echo
+    echo "For health monitoring documentation, see:"
+    echo "   $PROJECT_DIR/docs/health-monitoring.md"
     echo
     log_success "Vimeo Monitor installation completed successfully!"
 }
