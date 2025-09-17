@@ -1,7 +1,7 @@
 # Vimeo Monitor Makefile
 # Makefile for Vimeo Monitor project with uv, autostart, and cleanup commands
 
-.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-all run lint lint-strict format lint-fix uninstall
+.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory
 
 # Default target
 help:
@@ -25,6 +25,10 @@ help:
 	@echo "  uninstall       - Run automated uninstallation script"
 	@echo "  autostart-install - Install autostart desktop files"
 	@echo "  autostart-remove  - Remove autostart desktop files"
+	@echo ""
+	@echo "System Configuration:"
+	@echo "  fix-gpu-memory  - Fix GPU memory allocation for video playback"
+	@echo "  check-gpu-memory - Check current GPU memory allocation"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  serve           - Start MkDocs development server"
@@ -179,11 +183,6 @@ clean:
 	@echo "Clean complete!"
 
 # Installation targets
-install:
-	@echo "Running installation script..."
-	@chmod +x scripts/install.sh
-	@./scripts/install.sh
-
 uninstall:
 	@echo "Running uninstallation script..."
 	@chmod +x scripts/uninstall.sh
@@ -196,3 +195,43 @@ dev: setup serve
 deploy: build
 	@echo "Site built in 'site/' directory"
 	@echo "Ready for deployment!"
+
+# System Configuration Commands
+fix-gpu-memory:
+	@echo "Fixing GPU memory allocation for video playback..."
+	@echo "Current GPU memory allocation:"
+	@vcgencmd get_mem gpu || echo "vcgencmd not available"
+	@echo ""
+	@echo "Checking if gpu_mem is already configured..."
+	@if grep -q "^gpu_mem=" /boot/firmware/config.txt 2>/dev/null; then \
+		echo "GPU memory already configured in /boot/firmware/config.txt"; \
+		grep "^gpu_mem=" /boot/firmware/config.txt; \
+	else \
+		echo "Adding gpu_mem=128 to /boot/firmware/config.txt..."; \
+		echo "gpu_mem=128" | sudo tee -a /boot/firmware/config.txt; \
+		echo "GPU memory allocation updated successfully!"; \
+		echo ""; \
+		echo "⚠️  IMPORTANT: A reboot is required for changes to take effect."; \
+		echo "   Run: sudo reboot"; \
+		echo ""; \
+		echo "After reboot, verify with: make check-gpu-memory"; \
+	fi
+
+check-gpu-memory:
+	@echo "Checking GPU memory allocation..."
+	@echo "Current GPU memory:"
+	@vcgencmd get_mem gpu || echo "vcgencmd not available"
+	@echo ""
+	@echo "Current ARM memory:"
+	@vcgencmd get_mem arm || echo "vcgencmd not available"
+	@echo ""
+	@echo "Configuration in /boot/firmware/config.txt:"
+	@if grep -q "^gpu_mem=" /boot/firmware/config.txt 2>/dev/null; then \
+		grep "^gpu_mem=" /boot/firmware/config.txt; \
+	else \
+		echo "No gpu_mem setting found in config.txt"; \
+		echo "Run 'make fix-gpu-memory' to configure GPU memory"; \
+	fi
+	@echo ""
+	@echo "System temperature:"
+	@vcgencmd measure_temp || echo "vcgencmd not available"

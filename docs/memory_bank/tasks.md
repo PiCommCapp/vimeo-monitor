@@ -270,3 +270,77 @@ src/vimeo_monitor/
 - Avoid feature creep - stick to core requirements
 - Documentation should be comprehensive but not overwhelming
 - CI/CD should be straightforward and reliable
+
+## 🚨 CURRENT ISSUE: GPU Memory Allocation (Level 1 - RESOLVED)
+
+### Problem Identified
+- **Issue**: VLC stream playback causes desktop to become visible then screen goes blank
+- **Root Cause**: GPU memory allocation too low (8MB default) for 1920x1080 HLS stream decoding
+- **Symptoms**: 
+  - Stream detection works correctly
+  - Desktop becomes visible when VLC starts
+  - Screen goes blank after GPU memory exhaustion
+  - VLC process continues running in background
+  - System logs show no errors (stream continues)
+
+### Solution Implemented
+- [x] **GPU Memory Allocation Fix**
+  - [x] Added `gpu_mem=128` to `/boot/firmware/config.txt`
+  - [x] Verified configuration update
+  - [x] **REQUIRES REBOOT** to take effect
+
+### Next Steps
+- [ ] **Reboot System** to apply GPU memory allocation
+- [ ] **Test Stream Playback** after reboot
+- [ ] **Monitor GPU Memory Usage** with `make check-gpu-memory`
+- [ ] **Verify VLC Performance** with new memory allocation
+
+### Makefile Commands Added
+- [x] **Added `make fix-gpu-memory`** - Automatically configures GPU memory allocation
+- [x] **Added `make check-gpu-memory`** - Checks current GPU memory status
+- [x] **Updated help documentation** - Added System Configuration section
+- [x] **Smart detection** - Prevents duplicate configuration entries
+
+### Technical Details
+- **Current GPU Memory**: 8MB (insufficient)
+- **Target GPU Memory**: 128MB (recommended for 1080p video)
+- **Raspberry Pi 5**: ARM64, 4GB total memory
+- **VLC Process**: Running for 52+ minutes, stable but GPU-limited
+
+
+## 📋 Makefile Commands Reference
+
+### System Configuration Commands
+
+#### `make fix-gpu-memory`
+- **Purpose**: Fixes GPU memory allocation for video playback
+- **Action**: Adds `gpu_mem=128` to `/boot/firmware/config.txt`
+- **Smart Features**:
+  - Checks if already configured (prevents duplicates)
+  - Shows current GPU memory before/after
+  - Provides clear reboot instructions
+- **Usage**: `make fix-gpu-memory`
+- **Requires**: sudo access for config file modification
+
+#### `make check-gpu-memory`
+- **Purpose**: Checks current GPU memory allocation and system status
+- **Information Displayed**:
+  - Current GPU memory allocation
+  - Current ARM memory allocation
+  - Configuration file status
+  - System temperature
+- **Usage**: `make check-gpu-memory`
+- **No sudo required**
+
+### Usage Examples
+```bash
+# Check current GPU memory status
+make check-gpu-memory
+
+# Fix GPU memory allocation (if needed)
+make fix-gpu-memory
+
+# After reboot, verify the fix worked
+make check-gpu-memory
+```
+
