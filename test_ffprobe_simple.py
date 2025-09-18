@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import os
-import time
-import subprocess
-import logging
 import json
+import logging
+import os
+import subprocess
 import sys
+
 from dotenv import load_dotenv
 from vimeo import VimeoClient
 
@@ -23,45 +23,45 @@ try:
         key=os.getenv("VIMEO_KEY"),
         secret=os.getenv("VIMEO_SECRET"),
     )
-    
+
     # Test API URL
     test_url = "https://api.vimeo.com/me/live_events/4797083/m3u8_playback"
-    
+
     # Retrieve stream URL
     logger.info(f"Fetching stream data from: {test_url}")
     response = client.get(test_url)
-    
+
     if response.status_code != 200:
         logger.error(f"API request failed with status code: {response.status_code}")
         sys.exit(1)
-    
+
     # Print Stream URL
     print("Stream URL:")
     stream_response = response.json()
     print(json.dumps(stream_response, indent=2))
-    
+
     hls = stream_response.get("m3u8_playback_url")
-    
+
     if not hls:
         logger.error("No m3u8_playback_url found in response")
         sys.exit(1)
-    
+
     logger.info(f"Using HLS URL: {hls}")
-    
+
     # FFprobe command
     logger.info("Running ffprobe analysis...")
     stream_data = subprocess.run([
         "ffprobe",
-        "-v", 
-        "info", 
+        "-v",
+        "info",
         "-print_format", "json",
         "-show_streams",
-        "-show_format", 
-        "-timeout", 
-        "5000000", 
+        "-show_format",
+        "-timeout",
+        "5000000",
         hls
         ], capture_output=True, text=True, check=True)
-    
+
     # Parse and print FFprobe result
     ffprobe_result = json.loads(stream_data.stdout)
 

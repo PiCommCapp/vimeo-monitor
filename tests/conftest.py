@@ -7,7 +7,7 @@ import os
 import sys
 import tempfile
 from pathlib import Path
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pytest
 
@@ -39,7 +39,7 @@ def mock_config():
     config.check_interval = 10
     config.max_retries = 3
     config.project_root = Path("/tmp")
-    
+
     # Health monitoring configuration
     config.health_monitoring_enabled = False
     config.health_metrics_port = 8080
@@ -56,9 +56,9 @@ def mock_config():
     config.get_vimeo_client_config.return_value = {
         "token": "test_token",
         "key": "test_key",
-        "secret": "test_secret"
+        "secret": "test_secret",
     }
-    
+
     return config
 
 
@@ -97,14 +97,14 @@ def mock_process():
 def sample_vimeo_response():
     """Sample Vimeo API response."""
     return {
-        'data': [
+        "data": [
             {
-                'uri': '/videos/12345',
-                'name': 'Test Stream',
-                'link': 'https://vimeo.com/12345',
-                'embed': {
-                    'html': '<iframe src="https://player.vimeo.com/video/12345"></iframe>'
-                }
+                "uri": "/videos/12345",
+                "name": "Test Stream",
+                "link": "https://vimeo.com/12345",
+                "embed": {
+                    "html": '<iframe src="https://player.vimeo.com/video/12345"></iframe>'
+                },
             }
         ]
     }
@@ -113,30 +113,30 @@ def sample_vimeo_response():
 @pytest.fixture
 def empty_vimeo_response():
     """Empty Vimeo API response."""
-    return {'data': []}
+    return {"data": []}
 
 
 @pytest.fixture
 def test_environment():
     """Set up test environment variables."""
     original_env = os.environ.copy()
-    
+
     # Set test environment variables
     test_env = {
-        'VIMEO_TOKEN': 'test_token',
-        'VIMEO_KEY': 'test_key',
-        'VIMEO_SECRET': 'test_secret',
-        'STREAM_SELECTION': '1',
-        'LOG_LEVEL': 'INFO',
-        'CHECK_INTERVAL': '10',
-        'MAX_RETRIES': '3',
-        'HEALTH_MONITORING_ENABLED': 'false'
+        "VIMEO_TOKEN": "test_token",
+        "VIMEO_KEY": "test_key",
+        "VIMEO_SECRET": "test_secret",
+        "STREAM_SELECTION": "1",
+        "LOG_LEVEL": "INFO",
+        "CHECK_INTERVAL": "10",
+        "MAX_RETRIES": "3",
+        "HEALTH_MONITORING_ENABLED": "false",
     }
-    
+
     os.environ.update(test_env)
-    
+
     yield test_env
-    
+
     # Restore original environment
     os.environ.clear()
     os.environ.update(original_env)
@@ -158,7 +158,7 @@ def integration_test_config():
     config.check_interval = 5
     config.max_retries = 2
     config.project_root = Path("/tmp")
-    
+
     # Health monitoring configuration for integration tests
     config.health_monitoring_enabled = True
     config.health_metrics_port = 8081  # Use different port for testing
@@ -175,21 +175,15 @@ def integration_test_config():
     config.get_vimeo_client_config.return_value = {
         "token": "integration_test_token",
         "key": "integration_test_key",
-        "secret": "integration_test_secret"
+        "secret": "integration_test_secret",
     }
-    
+
     return config
 
 
 # Pytest markers
 def pytest_configure(config):
     """Configure pytest markers."""
-    config.addinivalue_line(
-        "markers", "integration: mark test as integration test"
-    )
-    config.addinivalue_line(
-        "markers", "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers", "unit: mark test as unit test"
-    )
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "unit: mark test as unit test")

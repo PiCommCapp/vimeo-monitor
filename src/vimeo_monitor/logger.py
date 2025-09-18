@@ -43,7 +43,7 @@ class Logger:
                     backupCount=self.config.log_rotation_days,
                 )
                 logger.addHandler(file_handler)
-            except (OSError, PermissionError) as e:
+            except (OSError, PermissionError):
                 # If file logging fails, continue with console logging only
                 # This allows the logger to still function even if file logging fails
                 pass
