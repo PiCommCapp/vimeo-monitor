@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from vimeo_monitor.config import Config
 
 
+@pytest.mark.unit
 class TestConfig:
     """Test cases for Config class."""
 

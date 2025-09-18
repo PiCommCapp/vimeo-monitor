@@ -28,7 +28,7 @@ class Config:
         self.vimeo_secret: str | None = os.getenv("VIMEO_SECRET")
 
         # Stream Configuration
-        self.stream_selection: int = int(os.getenv("STREAM_SELECTION", "1"))
+        self.stream_selection: int = self._safe_int(os.getenv("STREAM_SELECTION"), 1)
         self.static_image_path: str | None = self._resolve_path(
             os.getenv("STATIC_IMAGE_PATH")
         )
@@ -41,11 +41,11 @@ class Config:
             os.getenv("LOG_FILE", "logs/stream_monitor.log")
         )
         self.log_level: str = os.getenv("LOG_LEVEL", "INFO")
-        self.log_rotation_days: int = int(os.getenv("LOG_ROTATION_DAYS", "7"))
+        self.log_rotation_days: int = self._safe_int(os.getenv("LOG_ROTATION_DAYS"), 7)
 
         # Process Configuration
-        self.check_interval: int = int(os.getenv("CHECK_INTERVAL", "10"))
-        self.max_retries: int = int(os.getenv("MAX_RETRIES", "3"))
+        self.check_interval: int = self._safe_int(os.getenv("CHECK_INTERVAL"), 10)
+        self.max_retries: int = self._safe_int(os.getenv("MAX_RETRIES"), 3)
 
         # Stream IDs (hardcoded as they are static)
         self.streams = {
@@ -136,6 +136,18 @@ class Config:
         # Resolve relative to project root
         resolved = self.project_root / path
         return str(resolved.absolute())
+
+    def _safe_int(self, value: str | None, default: int, min_value: int = 1) -> int:
+        """Safely convert a string to an integer, returning default if conversion fails or value is invalid."""
+        if not value:
+            return default
+        try:
+            int_value = int(value)
+            if int_value < min_value:
+                return default
+            return int_value
+        except ValueError:
+            return default
 
     def validate(self) -> None:
         """Validate all required configuration and provide helpful error messages."""

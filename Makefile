@@ -1,7 +1,7 @@
 # Vimeo Monitor Makefile
 # Makefile for Vimeo Monitor project with uv, autostart, and cleanup commands
 
-.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory
+.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-integration test-error-scenarios test-documentation test-health test-slow test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory 
 
 # Default target
 help:
@@ -11,6 +11,11 @@ help:
 	@echo "  setup           - Create virtual environment and install dependencies"
 	@echo "  test            - Run the Vimeo Monitor (test mode)"
 	@echo "  test-unit       - Run unit tests"
+	@echo "  test-integration - Run integration tests"
+	@echo "  test-error-scenarios - Run error scenario tests"
+	@echo "  test-documentation - Run documentation tests"
+	@echo "  test-health     - Run health monitoring tests"
+	@echo "  test-slow       - Run slow tests"
 	@echo "  test-all        - Run all tests (system + unit)"
 	@echo "  run             - Run the Vimeo Monitor"
 	@echo ""
@@ -71,10 +76,35 @@ test:
 # Run unit tests
 test-unit:
 	@echo "Running unit tests..."
-	@uv run python -m pytest tests/ -v
+	@uv run python -m pytest tests/ -v -m "unit"
+
+# Run integration tests
+test-integration:
+	@echo "Running integration tests..."
+	@uv run python -m pytest tests/integration/ -v -m "integration"
+
+# Run error scenario tests
+test-error-scenarios:
+	@echo "Running error scenario tests..."
+	@uv run python -m pytest tests/error_scenarios/ -v -m "error_scenarios"
+
+# Run documentation tests
+test-documentation:
+	@echo "Running documentation tests..."
+	@uv run python -m pytest tests/test_documentation.py -v -m "documentation"
+
+# Run health monitoring tests
+test-health:
+	@echo "Running health monitoring tests..."
+	@uv run python -m pytest tests/test_health_module.py -v -m "health"
+
+# Run slow tests
+test-slow:
+	@echo "Running slow tests..."
+	@uv run python -m pytest tests/ -v -m "slow"
 
 # Run all tests
-test-all: test test-unit
+test-all: test test-unit test-integration test-error-scenarios test-documentation test-health
 	@echo "All tests completed"
 
 # Lint the codebase
@@ -145,8 +175,6 @@ autostart-install:
 	@mkdir -p ~/.config/autostart
 	@echo "Installing streamreturn.desktop..."
 	@cp install/streamreturn.desktop ~/.config/autostart/
-	@echo "Installing xrandr.desktop..."
-	@cp install/xrandr.desktop ~/.config/autostart/
 	@echo "Autostart files installed successfully!"
 	@echo "Vimeo Monitor will start automatically on next login."
 
@@ -224,14 +252,6 @@ check-gpu-memory:
 	@echo ""
 	@echo "Current ARM memory:"
 	@vcgencmd get_mem arm || echo "vcgencmd not available"
-	@echo ""
-	@echo "Configuration in /boot/firmware/config.txt:"
-	@if grep -q "^gpu_mem=" /boot/firmware/config.txt 2>/dev/null; then \
-		grep "^gpu_mem=" /boot/firmware/config.txt; \
-	else \
-		echo "No gpu_mem setting found in config.txt"; \
-		echo "Run 'make fix-gpu-memory' to configure GPU memory"; \
-	fi
 	@echo ""
 	@echo "System temperature:"
 	@vcgencmd measure_temp || echo "vcgencmd not available"

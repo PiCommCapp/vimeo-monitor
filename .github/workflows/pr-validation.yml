@@ -60,9 +60,21 @@ jobs:
         uv run mypy src/ --ignore-missing-imports || echo "Type checking completed with warnings"
       continue-on-error: true
 
-    - name: Run tests
+    - name: Run unit tests
       run: |
-        uv run pytest tests/ -v --cov=src --cov-report=xml
+        uv run pytest tests/ -v --cov=src --cov-report=xml -m "not slow and not integration"
+
+    - name: Run integration tests
+      run: |
+        uv run pytest tests/integration/ -v --cov=src --cov-append -m "integration"
+
+    - name: Run error scenario tests
+      run: |
+        uv run pytest tests/error_scenarios/ -v --cov=src --cov-append -m "not slow"
+
+    - name: Run documentation tests
+      run: |
+        uv run pytest tests/test_documentation.py -v --cov=src --cov-append
 
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.12'

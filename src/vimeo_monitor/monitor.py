@@ -34,6 +34,11 @@ class Monitor:
         self.monitor_logger = LoggingContext(logger, "MONITOR")
         self.process_manager = process_manager
 
+        # Configuration attributes (for testing compatibility)
+        self.check_interval = config.check_interval
+        self.max_retries = config.max_retries
+        self.retry_count = 0
+
         # Error tracking
         self.consecutive_errors = 0
         self.last_successful_check = time.time()

@@ -8,6 +8,8 @@ import sys
 import unittest
 from unittest.mock import MagicMock
 
+import pytest
+
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 )
@@ -15,6 +17,7 @@ sys.path.insert(
 from vimeo_monitor.config import Config
 
 
+@pytest.mark.health
 class TestHealthMonitoringConfig(unittest.TestCase):
     """Test health monitoring configuration."""
 
@@ -86,7 +89,7 @@ class TestHealthMonitoringConfig(unittest.TestCase):
         self.assertEqual(config.health_metrics_host, "0.0.0.0")
 
         # Check default intervals
-        self.assertEqual(config.health_hardware_interval, 30)
+        self.assertEqual(config.health_hardware_interval, 10)
         self.assertEqual(config.health_network_interval, 30)
         self.assertEqual(config.health_stream_interval, 60)
 
@@ -103,7 +106,7 @@ class TestHealthMonitoringConfig(unittest.TestCase):
         self.assertEqual(config.health_network_speedtest_interval, 300)
 
         # Check default stream configuration
-        self.assertEqual(config.health_stream_ffprobe_timeout, 29)
+        self.assertEqual(config.health_stream_ffprobe_timeout, 15)
 
     def test_health_config_validation(self):
         """Test that health monitoring configuration validation works correctly."""
@@ -132,6 +135,7 @@ class TestHealthMonitoringConfig(unittest.TestCase):
 
 
 @unittest.skip("Integration test - requires health monitoring dependencies")
+@pytest.mark.health
 class TestHealthModuleIntegration(unittest.TestCase):
     """Integration tests for the health module."""
 

@@ -93,7 +93,7 @@ remove_system_dependencies() {
     read -r response
     if [[ "$response" =~ ^[Yy]$ ]]; then
         # Remove packages
-        sudo apt remove -y vlc ffmpeg python3-dev build-essential
+        sudo apt remove -y vlc ffmpeg
         
         # Clean up any remaining packages
         sudo apt autoremove -y
@@ -101,29 +101,6 @@ remove_system_dependencies() {
         log_success "System dependencies removed"
     else
         log_info "System dependencies kept"
-    fi
-}
-
-remove_uv() {
-    log_info "Removing UV package manager..."
-    
-    # Ask for confirmation
-    echo -n "Remove UV package manager? (y/N): "
-    read -r response
-    if [[ "$response" =~ ^[Yy]$ ]]; then
-        # Remove uv installation
-        rm -rf ~/.cargo/bin/uv
-        rm -rf ~/.local/share/uv
-        
-        # Remove from PATH in .bashrc
-        sed -i '/export PATH="\$HOME\/.cargo\/bin:\$PATH"/d' ~/.bashrc
-        
-        # Remove any remaining uv cache
-        rm -rf ~/.cache/uv
-        
-        log_success "UV package manager removed"
-    else
-        log_info "UV package manager kept"
     fi
 }
 
@@ -163,13 +140,11 @@ show_completion() {
 main() {
     log_info "Starting Vimeo Monitor uninstallation..."
     echo
-    
     check_root
     stop_application
     remove_autostart
     remove_project_files
     remove_system_dependencies
-    remove_uv
     cleanup_logs
     show_completion
 }

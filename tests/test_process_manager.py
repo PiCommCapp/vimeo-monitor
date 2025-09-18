@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from vimeo_monitor.process_manager import ProcessManager
 
 
+@pytest.mark.unit
 class TestProcessManager:
     """Test cases for ProcessManager class."""
 
