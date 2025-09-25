@@ -1,7 +1,7 @@
 # Vimeo Monitor Makefile
 # Makefile for Vimeo Monitor project with uv, autostart, and cleanup commands
 
-.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-integration test-error-scenarios test-documentation test-health test-slow test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory fix-video-resolution check-video-resolution
+.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-integration test-error-scenarios test-documentation test-health test-slow test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory fix-video-resolution check-video-resolution docs docs-serve
 
 # Default target
 ## help: Display available commands
@@ -41,6 +41,8 @@ help:
 	@echo "Documentation:"
 	@echo "  serve           - Start MkDocs development server"
 	@echo "  build           - Build MkDocs static site"
+	@echo "  docs            - Build documentation using MkDocs"
+	@echo "  docs-serve      - Serve documentation locally for development"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  clean           - Clean all build artifacts and temporary files"
@@ -272,3 +274,16 @@ check-video-resolution:
 	@echo "Checking video resolution configuration..."
 	@chmod +x scripts/check-video-resolution.sh
 	@scripts/check-video-resolution.sh
+
+# Documentation commands
+docs:
+	@echo "Building documentation..."
+	@uv pip install mkdocs mkdocs-material pymdown-extensions
+	@uv run mkdocs build
+	@echo "Documentation built in the 'site' directory"
+
+docs-serve:
+	@echo "Starting documentation server..."
+	@uv pip install mkdocs mkdocs-material pymdown-extensions
+	@uv run mkdocs serve
+	@echo "Documentation server stopped"

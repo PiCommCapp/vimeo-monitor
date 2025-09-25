@@ -123,10 +123,16 @@ class TestSystemIntegration:
             assert "Process manager test message" in content
 
     @patch("vimeo_monitor.monitor.VimeoClient")
+    @patch("subprocess.Popen")
     def test_monitor_process_manager_integration(
-        self, mock_vimeo_client, integration_test_config
+        self, mock_popen, mock_vimeo_client, integration_test_config
     ):
         """Test monitor and process manager integration."""
+        # Mock Popen to return a running process
+        mock_process = Mock()
+        mock_process.poll.return_value = None  # Process is running
+        mock_popen.return_value = mock_process
+        
         # Mock Vimeo client
         mock_client_instance = Mock()
         mock_vimeo_client.return_value = mock_client_instance
@@ -146,15 +152,15 @@ class TestSystemIntegration:
         }
         mock_client_instance.get.return_value = mock_response
 
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
         # Create monitor
         process_manager = ProcessManager(integration_test_config, logger)
         monitor = Monitor(integration_test_config, logger, process_manager)
-
-        # Create process manager
-        process_manager = ProcessManager(integration_test_config, logger)
 
         # Test workflow: get stream URL and start process
         stream_url = monitor.get_stream_url()
@@ -222,17 +228,22 @@ class TestSystemIntegration:
             assert "Test message 0" in content
             assert "Test message 9" in content
 
-    def test_process_lifecycle_integration(self, integration_test_config):
-        """Test complete process lifecycle."""
+    @patch("subprocess.Popen")
+    def test_process_lifecycle_integration(self, mock_popen, integration_test_config):
+        """Test process lifecycle integration."""
+        # Mock Popen to return a running process
+        mock_process = Mock()
+        mock_process.poll.return_value = None  # Process is running
+        mock_popen.return_value = mock_process
+        
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
         # Create process manager
         process_manager = ProcessManager(integration_test_config, logger)
-
-        # Test process lifecycle
-        assert process_manager.current_process is None
-        assert process_manager.current_mode is None
 
         # Start image process
         process_manager.start_image_process("/tmp/test.png")
@@ -240,11 +251,23 @@ class TestSystemIntegration:
         # Verify process was started
         assert process_manager.current_process is not None
         assert process_manager.current_mode == "image"
+        assert process_manager.is_process_running()
 
-        # Test process status
-        status = process_manager.get_process_status()
-        assert status["mode"] == "image"
-        assert status["running"] is True
+        # Start error process (should stop image process)
+        process_manager.start_error_process("/tmp/error.png")
+
+        # Verify process was changed
+        assert process_manager.current_process is not None
+        assert process_manager.current_mode == "error"
+        assert process_manager.is_process_running()
+
+        # Stop process
+        process_manager._stop_current_process()
+
+        # Verify process was stopped
+        assert process_manager.current_process is None
+        assert process_manager.current_mode is None
+        assert not process_manager.is_process_running()
 
     def test_retry_mechanism_integration(self, integration_test_config):
         """Test retry mechanism integration."""
@@ -377,8 +400,14 @@ class TestSlowIntegration:
             os.remove(self.log_file)
         os.rmdir(self.temp_dir)
 
-    def test_long_running_process_integration(self, integration_test_config):
+    @patch("subprocess.Popen")
+    def test_long_running_process_integration(self, mock_popen, integration_test_config):
         """Test long-running process integration."""
+        # Mock Popen to return a running process
+        mock_process = Mock()
+        mock_process.poll.return_value = None  # Process is running
+        mock_popen.return_value = mock_process
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -398,8 +427,14 @@ class TestSlowIntegration:
         status = process_manager.get_process_status()
         assert status["running"] is True
 
-    def test_multiple_process_cycles_integration(self, integration_test_config):
+    @patch("subprocess.Popen")
+    def test_multiple_process_cycles_integration(self, mock_popen, integration_test_config):
         """Test multiple process start/stop cycles."""
+        # Mock Popen to return a running process
+        mock_process = Mock()
+        mock_process.poll.return_value = None  # Process is running
+        mock_popen.return_value = mock_process
+        
         # Create logger
         logger = Logger(integration_test_config)
 

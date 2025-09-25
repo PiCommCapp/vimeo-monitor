@@ -1,72 +1,50 @@
-name: Documentation
+name: Build and Deploy Documentation
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - main
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
-  schedule:
-    # Run daily at 2 AM UTC to ensure docs stay up to date
-    - cron: '0 2 * * *'
 
-# Grant GITHUB_TOKEN the permissions required to make a Pages deployment
 permissions:
   contents: read
   pages: write
   id-token: write
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
   group: "pages"
   cancel-in-progress: false
 
 jobs:
-  # Build job
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+      
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-
-      - name: Install uv
+          python-version: '3.10'
+          
+      - name: Setup UV
         uses: astral-sh/setup-uv@v2
-        with:
-          version: "latest"
-
-      - name: Cache uv dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/uv
-          key: ${{ runner.os }}-uv-docs-${{ hashFiles('**/uv.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-uv-docs-
-
+        
       - name: Install dependencies
-        run: |
-          uv sync --dev
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
+        run: uv pip install mkdocs mkdocs-material pymdown-extensions
+        
       - name: Build documentation
-        run: |
-          uv run mkdocs build
-
+        run: uv run mkdocs build
+        
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./site
-
-  # Deployment job
+  
   deploy:
     environment:
       name: github-pages

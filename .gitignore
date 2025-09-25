@@ -97,7 +97,7 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# logs/
+logs/
 
 # =============================================================================
 # VIRTUAL ENVIRONMENTS

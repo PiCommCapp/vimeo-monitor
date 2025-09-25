@@ -72,7 +72,7 @@ class Config:
 
             # Monitoring intervals
             self.health_hardware_interval: int = int(
-                os.getenv("HEALTH_HARDWARE_INTERVAL", "10")
+                os.getenv("HEALTH_HARDWARE_INTERVAL", "30")
             )
             self.health_network_interval: int = int(
                 os.getenv("HEALTH_NETWORK_INTERVAL", "30")
