@@ -141,7 +141,6 @@ The Vimeo Monitor uses a modular, production-ready architecture:
 - Performance metrics collection
 - Automated alerting on stream issues
 
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](contributing.md) for details on:

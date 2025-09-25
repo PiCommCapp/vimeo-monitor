@@ -43,10 +43,6 @@ nav:
     - Changelog: changelog.md
     - License: license.md
 
-# Exclude memory bank, archive, and decision documents
-exclude_docs: |
-  memory_bank/
-  archive/
-  *.decision.md
-  *.plan.md
-  *.creative.md
+# Note: Memory bank, archive, and other non-documentation files
+# are excluded from the documentation build by not including them
+# in the navigation structure above.

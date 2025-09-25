@@ -143,8 +143,6 @@ main() {
     check_root
     stop_application
     remove_autostart
-    remove_project_files
-    remove_system_dependencies
     cleanup_logs
     show_completion
 }

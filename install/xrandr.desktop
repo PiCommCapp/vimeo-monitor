@@ -1,6 +1,6 @@
 [Desktop Entry]
 Type=Application
-Exec=xrandr --output HDMI-1 --mode 1280x720 --rate 50
+Exec=xrandr --output HDMI-1 --mode 1920x1080 --rate 50
 Hidden=false
 NoDisplay=false
 X-GNOME-Autostart-enabled=true
