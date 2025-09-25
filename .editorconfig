@@ -13,6 +13,7 @@ trim_trailing_whitespace = true
 [*.{py,rst,ini}]
 indent_style = space
 indent_size = 4
+trim_trailing_whitespace = true
 
 [*.{html,css,scss,json,yml,xml,toml}]
 indent_style = space
@@ -32,11 +33,13 @@ indent_size = 2
 [*.{json,jsonc}]
 indent_style = space
 indent_size = 2
+trim_trailing_whitespace = true
 
 # YAML files
 [*.{yml,yaml}]
 indent_style = space
 indent_size = 2
+trim_trailing_whitespace = true
 
 # Docker files
 [Dockerfile]

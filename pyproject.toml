@@ -154,11 +154,22 @@ addopts = [
     "--tb=short",
     "--strict-markers",
     "--strict-config",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-fail-under=50",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "unit: marks tests as unit tests",
+    "error_scenarios: marks tests as error scenario tests",
+    "documentation: marks tests as documentation tests",
+    "health: marks tests as health monitoring tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
 ]
 
 [dependency-groups]

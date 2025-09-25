@@ -18,6 +18,7 @@ class Logger:
     def __init__(self, config: Config):
         """Initialize logger with configuration."""
         self.config = config
+        self.log_file = config.log_file
         self.logger = self._setup_logger()
 
     def _setup_logger(self) -> logging.Logger:
@@ -30,17 +31,22 @@ class Logger:
 
         # Create log directory if it doesn't exist
         if self.config.log_file:
-            log_dir = os.path.dirname(self.config.log_file)
-            if log_dir and not os.path.exists(log_dir):
-                os.makedirs(log_dir, exist_ok=True)
+            try:
+                log_dir = os.path.dirname(self.config.log_file)
+                if log_dir and not os.path.exists(log_dir):
+                    os.makedirs(log_dir, exist_ok=True)
 
-            # File handler with rotation
-            file_handler = RotatingFileHandler(
-                self.config.log_file,
-                maxBytes=10 * 1024 * 1024,  # 10MB
-                backupCount=self.config.log_rotation_days,
-            )
-            logger.addHandler(file_handler)
+                # File handler with rotation
+                file_handler = RotatingFileHandler(
+                    self.config.log_file,
+                    maxBytes=10 * 1024 * 1024,  # 10MB
+                    backupCount=self.config.log_rotation_days,
+                )
+                logger.addHandler(file_handler)
+            except (OSError, PermissionError):
+                # If file logging fails, continue with console logging only
+                # This allows the logger to still function even if file logging fails
+                pass
         else:
             # No log file configured, only console logging
             pass
