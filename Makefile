@@ -1,9 +1,10 @@
 # Vimeo Monitor Makefile
 # Makefile for Vimeo Monitor project with uv, autostart, and cleanup commands
 
-.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-integration test-error-scenarios test-documentation test-health test-slow test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory 
+.PHONY: help install setup serve build clean autostart-install autostart-remove test test-unit test-integration test-error-scenarios test-documentation test-health test-slow test-all run lint lint-strict format lint-fix uninstall fix-gpu-memory check-gpu-memory fix-video-resolution check-video-resolution
 
 # Default target
+## help: Display available commands
 help:
 	@echo "Vimeo Monitor - Available commands:"
 	@echo ""
@@ -34,6 +35,8 @@ help:
 	@echo "System Configuration:"
 	@echo "  fix-gpu-memory  - Fix GPU memory allocation for video playback"
 	@echo "  check-gpu-memory - Check current GPU memory allocation"
+	@echo "  fix-video-resolution - Set static HDMI video resolution (1920x1080@50Hz)"
+	@echo "  check-video-resolution - Check current video resolution configuration"
 	@echo ""
 	@echo "Documentation:"
 	@echo "  serve           - Start MkDocs development server"
@@ -255,3 +258,17 @@ check-gpu-memory:
 	@echo ""
 	@echo "System temperature:"
 	@vcgencmd measure_temp || echo "vcgencmd not available"
+
+# Video resolution configuration commands
+fix-video-resolution:
+	@echo "Setting static video resolution (1920x1080@50Hz)..."
+	@echo "This requires sudo privileges to modify boot configuration"
+	@chmod +x scripts/fix-video-resolution.sh
+	@sudo scripts/fix-video-resolution.sh
+	@echo ""
+	@echo "After reboot, verify with: make check-video-resolution"
+
+check-video-resolution:
+	@echo "Checking video resolution configuration..."
+	@chmod +x scripts/check-video-resolution.sh
+	@scripts/check-video-resolution.sh

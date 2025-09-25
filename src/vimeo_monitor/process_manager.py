@@ -47,6 +47,18 @@ class ProcessManager:
             )
             self.current_mode = "stream"
             self.process_logger.info("Stream process started successfully")
+        except OSError as e:
+            self.process_logger.error(f"System error starting stream process: {e}")
+            # Handle resource exhaustion or process creation errors
+            if "Too many open files" in str(e):
+                self.process_logger.error("System resource exhaustion detected")
+                # Try to recover by showing error image
+                if hasattr(self.config, "error_image_path") and self.config.error_image_path:
+                    try:
+                        self.start_error_process(self.config.error_image_path)
+                    except Exception:
+                        pass  # Already in error state, just log
+            return  # Don't re-raise, allow graceful degradation
         except Exception as e:
             self.process_logger.error(f"Failed to start stream process: {e}")
             raise
@@ -68,6 +80,12 @@ class ProcessManager:
             )
             self.current_mode = "image"
             self.process_logger.info("Image process started successfully")
+        except OSError as e:
+            self.process_logger.error(f"System error starting image process: {e}")
+            # Handle resource exhaustion or process creation errors
+            if "Too many open files" in str(e):
+                self.process_logger.error("System resource exhaustion detected")
+            return  # Don't re-raise, allow graceful degradation
         except Exception as e:
             self.process_logger.error(f"Failed to start image process: {e}")
             raise
@@ -89,6 +107,12 @@ class ProcessManager:
             )
             self.current_mode = "error"
             self.process_logger.warning("Error process started successfully")
+        except OSError as e:
+            self.process_logger.error(f"System error starting error process: {e}")
+            # Handle resource exhaustion or process creation errors
+            if "Too many open files" in str(e):
+                self.process_logger.error("System resource exhaustion detected")
+            return  # Don't re-raise, allow graceful degradation
         except Exception as e:
             self.process_logger.error(f"Failed to start error process: {e}")
             raise

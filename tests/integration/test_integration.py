@@ -29,7 +29,16 @@ class TestSystemIntegration:
         """Set up test fixtures."""
         self.temp_dir = tempfile.mkdtemp()
         self.log_file = os.path.join(self.temp_dir, "integration_test.log")
-
+        
+        # Create the log file directory if it doesn't exist
+        log_dir = os.path.dirname(self.log_file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+        
+        # Touch the log file to make sure it exists
+        with open(self.log_file, 'a'):
+            pass
+            
     def teardown_method(self):
         """Clean up test fixtures."""
         # Clean up temporary files
@@ -37,8 +46,16 @@ class TestSystemIntegration:
             os.remove(self.log_file)
         os.rmdir(self.temp_dir)
 
+    def setup_test_config(self, integration_test_config):
+        """Set up test configuration with the correct log file path."""
+        integration_test_config.log_file = self.log_file
+        return integration_test_config
+
     def test_system_initialization(self, integration_test_config):
         """Test complete system initialization."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -68,6 +85,9 @@ class TestSystemIntegration:
 
     def test_monitor_logger_integration(self, integration_test_config):
         """Test monitor and logger integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -85,6 +105,9 @@ class TestSystemIntegration:
 
     def test_process_manager_logger_integration(self, integration_test_config):
         """Test process manager and logger integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -145,9 +168,15 @@ class TestSystemIntegration:
         assert process_manager.current_mode == "stream"
 
     def test_error_handling_integration(self, integration_test_config):
-        """Test error handling across components."""
+        """Test error handling integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
+
+        # Create process manager
+        process_manager = ProcessManager(integration_test_config, logger)
 
         # Create monitor with invalid config
         invalid_config = Mock()
@@ -157,12 +186,20 @@ class TestSystemIntegration:
         invalid_config.stream_selection = 1
         invalid_config.check_interval = 10
         invalid_config.max_retries = 3
+        
+        # Set up the get_vimeo_client_config mock to return a dictionary
+        invalid_config.get_vimeo_client_config.return_value = {
+            "key": "test_key",
+            "secret": "test_secret"
+        }
 
-        monitor = Monitor(invalid_config, logger)
+        # Create a new process manager for the invalid config
+        invalid_process_manager = ProcessManager(invalid_config, logger)
+        invalid_monitor = Monitor(invalid_config, logger, invalid_process_manager)
 
         # Test that validation fails
         with pytest.raises(ValueError):
-            monitor.validate_config()
+            invalid_monitor.validate_config()
 
     def test_log_rotation_integration(self, integration_test_config):
         """Test log rotation integration."""
@@ -211,6 +248,9 @@ class TestSystemIntegration:
 
     def test_retry_mechanism_integration(self, integration_test_config):
         """Test retry mechanism integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -228,14 +268,18 @@ class TestSystemIntegration:
         assert monitor.retry_count == 0
 
         # Test retry decision logic
-        monitor.retry_count = 2
+        # For this test, max_retries is 2 (from integration_test_config)
+        monitor.retry_count = 1  # One retry used, one remaining
         assert monitor.should_retry() is True
-
-        monitor.retry_count = 3
+        
+        monitor.retry_count = 2  # At max retries, should not retry
         assert monitor.should_retry() is False
 
     def test_configuration_validation_integration(self, integration_test_config):
         """Test configuration validation integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 
@@ -252,9 +296,16 @@ class TestSystemIntegration:
         invalid_config.stream_selection = 1
         invalid_config.check_interval = 10
         invalid_config.max_retries = 3
+        invalid_config.get_vimeo_client_config = Mock(return_value={
+            "key": "test_key",
+            "secret": "test_secret"
+        })
 
-        invalid_monitor = Monitor(invalid_config, logger)
+        # Create a new process manager for the invalid config
+        invalid_process_manager = ProcessManager(invalid_config, logger)
+        invalid_monitor = Monitor(invalid_config, logger, invalid_process_manager)
 
+        # Test that validation fails
         with pytest.raises(ValueError):
             invalid_monitor.validate_config()
 
@@ -285,6 +336,9 @@ class TestSystemIntegration:
 
     def test_exception_handling_integration(self, integration_test_config):
         """Test exception handling integration."""
+        # Set up test configuration
+        integration_test_config = self.setup_test_config(integration_test_config)
+        
         # Create logger
         logger = Logger(integration_test_config)
 

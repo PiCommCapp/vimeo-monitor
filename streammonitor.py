@@ -8,6 +8,7 @@ This script monitors Vimeo live streams and displays them using VLC/FFmpeg.
 import signal
 import sys
 import time
+from typing import Any
 
 from vimeo_monitor import LoggingContext, config, get_logger
 from vimeo_monitor.monitor import Monitor
@@ -17,13 +18,13 @@ from vimeo_monitor.process_manager import ProcessManager
 class VimeoMonitorApp:
     """Main application class for Vimeo Monitor."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the Vimeo Monitor application."""
         self.logger = get_logger(config)
         self.app_logger = LoggingContext(self.logger, "APP")
         self.process_manager: ProcessManager | None = None
         self.monitor: Monitor | None = None
-        self.health_module = None  # Health monitoring module
+        self.health_module: Any = None  # Health monitoring module
         self.running = False
 
         # System tracking
@@ -74,7 +75,7 @@ class VimeoMonitorApp:
     def setup_signal_handlers(self) -> None:
         """Set up signal handlers for graceful shutdown."""
 
-        def signal_handler(signum, frame):
+        def signal_handler(signum: int, frame: Any) -> None:
             self.app_logger.info(
                 f"Received signal {signum}, initiating graceful shutdown"
             )
@@ -106,11 +107,15 @@ class VimeoMonitorApp:
             while self.running:
                 try:
                     # Run monitoring cycle
-                    self.monitor.run_monitoring_cycle()
+                    if self.monitor:
+                        self.monitor.run_monitoring_cycle()
 
-                    # Check if stream needs restart
-                    if not self.monitor.restart_stream_if_needed():
-                        self.app_logger.warning("Stream restart failed")
+                        # Check if stream needs restart
+                        if not self.monitor.restart_stream_if_needed():
+                            self.app_logger.warning("Stream restart failed")
+                    else:
+                        self.app_logger.error("Monitor not initialized")
+                        break
 
                     # Wait for configured interval
                     time.sleep(config.check_interval)
@@ -130,14 +135,18 @@ class VimeoMonitorApp:
 
         return 0
 
-    def get_system_status(self) -> dict:
+    def get_system_status(self) -> dict[str, Any]:
         """Get current system status information."""
         try:
             uptime = time.time() - self.system_start_time
-            monitor_status = self.monitor.get_status_info()
-            process_status = self.process_manager.get_process_status()
+            monitor_status = {}
+            if self.monitor:
+                monitor_status = self.monitor.get_status_info()
+            process_status = {}
+            if self.process_manager:
+                process_status = self.process_manager.get_process_status()
 
-            status = {
+            status: dict[str, Any] = {
                 "uptime": uptime,
                 "monitor_status": monitor_status,
                 "process_status": process_status,

@@ -7,7 +7,10 @@ This module provides structured logging with rotation capabilities.
 
 import logging
 import os
+import sys
+import traceback
 from logging.handlers import RotatingFileHandler
+from typing import Any, Dict, Optional
 
 from .config import Config
 
@@ -83,6 +86,22 @@ class Logger:
     def critical(self, message: str, **kwargs: str) -> None:
         """Log critical message."""
         self.logger.critical(message, extra=kwargs)
+    
+    def exception(self, message: str, exc_info: Optional[Any] = None, **kwargs: str) -> None:
+        """Log exception with traceback.
+        
+        Args:
+            message: Message to log
+            exc_info: Exception info (if None, uses current exception from sys.exc_info())
+            **kwargs: Additional logging context
+        """
+        if exc_info is None:
+            exc_info = sys.exc_info()
+        
+        self.logger.error(
+            f"{message}\n{traceback.format_exception(*exc_info) if exc_info[0] else ''}",
+            extra=kwargs
+        )
 
 
 class LoggingContext:
@@ -112,6 +131,15 @@ class LoggingContext:
     def critical(self, message: str) -> None:
         """Log critical message with context."""
         self.logger.critical(f"[{self.context}] {message}")
+    
+    def exception(self, message: str, exc_info: Optional[Any] = None) -> None:
+        """Log exception with traceback and context.
+        
+        Args:
+            message: Message to log
+            exc_info: Exception info (if None, uses current exception from sys.exc_info())
+        """
+        self.logger.exception(f"[{self.context}] {message}", exc_info=exc_info)
 
 
 # Global logger instance (will be initialized with config)

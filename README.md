@@ -160,6 +160,34 @@ HEALTH_MONITORING_ENABLED=false   # Enable metrics collection
 HEALTH_METRICS_PORT=8080          # Metrics server port
 ```
 
+## 🔧 System Configuration
+
+### GPU Memory Allocation
+
+For proper video playback, the Raspberry Pi requires sufficient GPU memory:
+
+```bash
+# Fix GPU memory allocation (increases to 128MB)
+sudo make fix-gpu-memory
+
+# Check current GPU memory allocation
+make check-gpu-memory
+```
+
+### Video Resolution
+
+Set a static HDMI video resolution for consistent display:
+
+```bash
+# Set static video resolution (1920x1080@50Hz)
+sudo make fix-video-resolution
+
+# Check current video resolution configuration
+make check-video-resolution
+```
+
+The video resolution setting adds `video=HDMI-A-1:1920x1080M@50` to your boot configuration, ensuring consistent display output even when no monitor is detected.
+
 ## 🚨 Troubleshooting
 
 ### Common Issues
@@ -176,6 +204,7 @@ HEALTH_METRICS_PORT=8080          # Metrics server port
 **"No video display"**
 - Check display is active: `xrandr`
 - Test with static image: `ffplay -fs media/holding.png`
+- Set static resolution: `sudo make fix-video-resolution`
 
 **Need more help?** Check our [Troubleshooting Guide](https://pcommcapp.github.io/vimeo-monitor/troubleshooting/) for detailed solutions.
 

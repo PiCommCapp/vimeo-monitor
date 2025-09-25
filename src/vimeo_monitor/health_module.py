@@ -7,6 +7,7 @@ metrics endpoint for monitoring the health of the Vimeo Monitor application.
 """
 
 import threading
+from typing import Any
 
 try:
     import fastapi
@@ -24,8 +25,12 @@ class HealthModule:
     """Main health monitoring coordinator."""
 
     def __init__(
-        self, config: Config, logger: Logger, monitor=None, process_manager=None
-    ):
+        self,
+        config: Config,
+        logger: Logger,
+        monitor: Any = None,
+        process_manager: Any = None,
+    ) -> None:
         """Initialize health monitoring module.
 
         Args:
@@ -76,7 +81,7 @@ class HealthModule:
 
         # Server thread
         self.server = None
-        self.server_thread = None
+        self.server_thread: threading.Thread | None = None
         self.running = False
 
         # Configure routes
@@ -86,7 +91,7 @@ class HealthModule:
         # Log configuration details
         self._log_configuration()
 
-    def _log_configuration(self):
+    def _log_configuration(self) -> None:
         """Log health monitoring configuration."""
         self.health_logger.info(
             f"Health metrics host: {self.config.health_metrics_host}"
@@ -142,11 +147,11 @@ class HealthModule:
 
         self.health_logger.info(f"Enabled collectors: {', '.join(enabled_collectors)}")
 
-    def _configure_routes(self):
+    def _configure_routes(self) -> None:
         """Configure FastAPI routes."""
 
         @self.app.get("/metrics")
-        async def metrics():
+        async def metrics() -> fastapi.Response:
             """Prometheus metrics endpoint."""
             self.health_logger.debug("Metrics endpoint accessed")
             metrics_data = self.metrics_collector.get_metrics()
@@ -155,13 +160,13 @@ class HealthModule:
             )
 
         @self.app.get("/health")
-        async def health():
+        async def health() -> dict[str, str]:
             """Simple health check endpoint."""
             self.health_logger.debug("Health check endpoint accessed")
             return {"status": "healthy"}
 
         @self.app.get("/")
-        async def root():
+        async def root() -> dict[str, Any]:
             """Root endpoint with basic information."""
             self.health_logger.debug("Root endpoint accessed")
             return {
@@ -174,7 +179,7 @@ class HealthModule:
                 ],
             }
 
-    def start(self):
+    def start(self) -> None:
         """Start health monitoring."""
         if self.running:
             self.health_logger.warning("Health monitoring already running")
@@ -197,7 +202,7 @@ class HealthModule:
         )
         self.health_logger.info("Available endpoints: /metrics, /health")
 
-    def _run_server(self):
+    def _run_server(self) -> None:
         """Run FastAPI server in a separate thread."""
         try:
             self.health_logger.info(
@@ -213,7 +218,7 @@ class HealthModule:
         except Exception as e:
             self.health_logger.error(f"Failed to start health monitoring server: {e}")
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Gracefully shutdown health monitoring."""
         if not self.running:
             self.health_logger.debug(

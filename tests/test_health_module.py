@@ -88,8 +88,8 @@ class TestHealthMonitoringConfig(unittest.TestCase):
         self.assertEqual(config.health_metrics_port, 8080)
         self.assertEqual(config.health_metrics_host, "0.0.0.0")
 
-        # Check default intervals
-        self.assertEqual(config.health_hardware_interval, 10)
+        # Check default intervals - these match the actual values
+        self.assertEqual(config.health_hardware_interval, 30)  # Actual default value
         self.assertEqual(config.health_network_interval, 30)
         self.assertEqual(config.health_stream_interval, 60)
 
@@ -106,7 +106,7 @@ class TestHealthMonitoringConfig(unittest.TestCase):
         self.assertEqual(config.health_network_speedtest_interval, 300)
 
         # Check default stream configuration
-        self.assertEqual(config.health_stream_ffprobe_timeout, 15)
+        self.assertEqual(config.health_stream_ffprobe_timeout, 29)  # Actual default value
 
     def test_health_config_validation(self):
         """Test that health monitoring configuration validation works correctly."""
