@@ -18,7 +18,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "PyVimeo>=0.3.0",
+    "PyVimeo>=1.1.2",
     "requests>=2.25.0",
     "python-dotenv>=0.15.0",
 ]
