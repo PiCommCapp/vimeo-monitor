@@ -50,7 +50,7 @@ class Config:
         # Stream IDs (hardcoded as they are static)
         self.streams = {
             1: "4797083",
-            2: "4797121",
+            2: "6175687",
             3: "4898539",
             4: "4797153",
             5: "4797202",
